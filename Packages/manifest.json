@@ -1,14 +1,15 @@
 {
   "dependencies": {
-    "com.unity.netcode.gameobject": "1.8.1",
+    "com.raybelcreation.netcode.transport.steam": "https://github.com/RaybelGames/Steam-Network-Transport-for-NGO.git",
     "com.rlabrecque.steamworks.net": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net",
-    "com.veriorpies.parrelsync": "https://github.com/VeriorPies/ParrelSync.git?path=/ParrelSync",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.collab-proxy": "2.11.3",
     "com.unity.ide.rider": "3.0.39",
     "com.unity.ide.visualstudio": "2.0.26",
     "com.unity.inputsystem": "1.18.0",
     "com.unity.multiplayer.center": "1.0.1",
+    "com.unity.multiplayer.playmode": "2.0.2",
+    "com.unity.netcode.gameobjects": "1.8.1",
     "com.unity.pipeline": "0.7.0-exp.1",
     "com.unity.render-pipelines.universal": "17.3.0",
     "com.unity.test-framework": "1.6.0",
