@@ -5,11 +5,11 @@ using Steamworks;
 
 public class LobbyManager : NetworkBehaviour
 {
-    public Text[] PlayerNameTexts;
-    public Text[] PlayerReadyTexts;
-    public Button ReadyButton;
-    public Button StartGameButton;
-    public GameObject LobbyUIPanel;
+    [SerializeField] private Text[] _playerNameTexts;
+    [SerializeField] private Text[] _playerReadyTexts;
+    [SerializeField] private Button _readyButton;
+    [SerializeField] private Button _startGameButton;
+    [SerializeField] private GameObject _lobbyUIPanel;
 
     public struct LobbyPlayerState : INetworkSerializable, System.IEquatable<LobbyPlayerState>
     {
@@ -30,25 +30,25 @@ public class LobbyManager : NetworkBehaviour
         }
     }
 
-    private NetworkList<LobbyPlayerState> m_LobbyPlayers;
+    private NetworkList<LobbyPlayerState> _lobbyPlayers;
 
     private void Awake()
     {
-        m_LobbyPlayers = new NetworkList<LobbyPlayerState>();
+        _lobbyPlayers = new NetworkList<LobbyPlayerState>();
         // 처음엔 로비 UI 숨김 (접속 후 표시)
-        if (LobbyUIPanel != null) LobbyUIPanel.SetActive(false);
+        if (_lobbyUIPanel != null) _lobbyUIPanel.SetActive(false);
     }
 
     public override void OnNetworkSpawn()
     {
-        if (LobbyUIPanel != null) LobbyUIPanel.SetActive(true);
+        if (_lobbyUIPanel != null) _lobbyUIPanel.SetActive(true);
 
         if (IsServer)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
             
-            m_LobbyPlayers.Add(new LobbyPlayerState { 
+            _lobbyPlayers.Add(new LobbyPlayerState { 
                 ClientId = NetworkManager.Singleton.LocalClientId, 
                 PlayerName = GetMyPlayerName(), 
                 IsReady = false 
@@ -59,11 +59,11 @@ public class LobbyManager : NetworkBehaviour
             SubmitPlayerNameServerRpc(GetMyPlayerName());
         }
 
-        m_LobbyPlayers.OnListChanged += HandleLobbyPlayersStateChanged;
+        _lobbyPlayers.OnListChanged += HandleLobbyPlayersStateChanged;
         UpdateUI();
 
-        ReadyButton.onClick.AddListener(() => ToggleReadyServerRpc());
-        StartGameButton.onClick.AddListener(() => StartGame());
+        _readyButton.onClick.AddListener(() => ToggleReadyServerRpc());
+        _startGameButton.onClick.AddListener(() => StartGame());
     }
 
     public override void OnNetworkDespawn()
@@ -73,9 +73,9 @@ public class LobbyManager : NetworkBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
         }
-        m_LobbyPlayers.OnListChanged -= HandleLobbyPlayersStateChanged;
+        _lobbyPlayers.OnListChanged -= HandleLobbyPlayersStateChanged;
         
-        if (LobbyUIPanel != null) LobbyUIPanel.SetActive(false);
+        if (_lobbyUIPanel != null) _lobbyUIPanel.SetActive(false);
     }
 
     private string GetMyPlayerName()
@@ -87,16 +87,16 @@ public class LobbyManager : NetworkBehaviour
 
     private void HandleClientConnected(ulong clientId)
     {
-        m_LobbyPlayers.Add(new LobbyPlayerState { ClientId = clientId, PlayerName = "Connecting...", IsReady = false });
+        _lobbyPlayers.Add(new LobbyPlayerState { ClientId = clientId, PlayerName = "Connecting...", IsReady = false });
     }
 
     private void HandleClientDisconnect(ulong clientId)
     {
-        for (int i = 0; i < m_LobbyPlayers.Count; i++)
+        for (int i = 0; i < _lobbyPlayers.Count; i++)
         {
-            if (m_LobbyPlayers[i].ClientId == clientId)
+            if (_lobbyPlayers[i].ClientId == clientId)
             {
-                m_LobbyPlayers.RemoveAt(i);
+                _lobbyPlayers.RemoveAt(i);
                 break;
             }
         }
@@ -105,13 +105,13 @@ public class LobbyManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SubmitPlayerNameServerRpc(string playerName, ServerRpcParams rpcParams = default)
     {
-        for (int i = 0; i < m_LobbyPlayers.Count; i++)
+        for (int i = 0; i < _lobbyPlayers.Count; i++)
         {
-            if (m_LobbyPlayers[i].ClientId == rpcParams.Receive.SenderClientId)
+            if (_lobbyPlayers[i].ClientId == rpcParams.Receive.SenderClientId)
             {
-                var state = m_LobbyPlayers[i];
+                var state = _lobbyPlayers[i];
                 state.PlayerName = playerName;
-                m_LobbyPlayers[i] = state;
+                _lobbyPlayers[i] = state;
                 break;
             }
         }
@@ -120,13 +120,13 @@ public class LobbyManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void ToggleReadyServerRpc(ServerRpcParams rpcParams = default)
     {
-        for (int i = 0; i < m_LobbyPlayers.Count; i++)
+        for (int i = 0; i < _lobbyPlayers.Count; i++)
         {
-            if (m_LobbyPlayers[i].ClientId == rpcParams.Receive.SenderClientId)
+            if (_lobbyPlayers[i].ClientId == rpcParams.Receive.SenderClientId)
             {
-                var state = m_LobbyPlayers[i];
+                var state = _lobbyPlayers[i];
                 state.IsReady = !state.IsReady;
-                m_LobbyPlayers[i] = state;
+                _lobbyPlayers[i] = state;
                 break;
             }
         }
@@ -143,23 +143,23 @@ public class LobbyManager : NetworkBehaviour
 
         for (int i = 0; i < 4; i++)
         {
-            if (i < m_LobbyPlayers.Count)
+            if (i < _lobbyPlayers.Count)
             {
-                PlayerNameTexts[i].text = m_LobbyPlayers[i].PlayerName.ToString();
-                PlayerReadyTexts[i].text = m_LobbyPlayers[i].IsReady ? "Ready" : "Waiting";
-                PlayerReadyTexts[i].color = m_LobbyPlayers[i].IsReady ? Color.green : Color.red;
+                _playerNameTexts[i].text = _lobbyPlayers[i].PlayerName.ToString();
+                _playerReadyTexts[i].text = _lobbyPlayers[i].IsReady ? "Ready" : "Waiting";
+                _playerReadyTexts[i].color = _lobbyPlayers[i].IsReady ? Color.green : Color.red;
 
-                if (!m_LobbyPlayers[i].IsReady) allReady = false;
+                if (!_lobbyPlayers[i].IsReady) allReady = false;
             }
             else
             {
-                PlayerNameTexts[i].text = "Empty Slot";
-                PlayerReadyTexts[i].text = "";
+                _playerNameTexts[i].text = "Empty Slot";
+                _playerReadyTexts[i].text = "";
             }
         }
 
-        StartGameButton.gameObject.SetActive(IsServer);
-        StartGameButton.interactable = allReady && m_LobbyPlayers.Count > 0;
+        _startGameButton.gameObject.SetActive(IsServer);
+        _startGameButton.interactable = allReady && _lobbyPlayers.Count > 0;
     }
 
     private void StartGame()

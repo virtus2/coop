@@ -109,11 +109,12 @@ public class CreateLobbyUI
 
         var netObj = panelGO.AddComponent<NetworkObject>();
         var manager = panelGO.AddComponent<LobbyManager>();
-        manager.PlayerNameTexts = nameTexts;
-        manager.PlayerReadyTexts = readyTexts;
-        manager.ReadyButton = readyBtn;
-        manager.StartGameButton = startBtn;
-        manager.LobbyUIPanel = panelGO;
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        manager.GetType().GetField("_playerNameTexts", flags).SetValue(manager, nameTexts);
+        manager.GetType().GetField("_playerReadyTexts", flags).SetValue(manager, readyTexts);
+        manager.GetType().GetField("_readyButton", flags).SetValue(manager, readyBtn);
+        manager.GetType().GetField("_startGameButton", flags).SetValue(manager, startBtn);
+        manager.GetType().GetField("_lobbyUIPanel", flags).SetValue(manager, panelGO);
         
         Selection.activeGameObject = canvasGO;
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());

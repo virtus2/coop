@@ -5,9 +5,9 @@ using RaybelCreation.Netcode.Transports.Steam;
 
 public class SteamLobbyManager : MonoBehaviour
 {
-    protected Callback<LobbyCreated_t> LobbyCreated;
-    protected Callback<GameLobbyJoinRequested_t> JoinRequest;
-    protected Callback<LobbyEnter_t> LobbyEntered;
+    protected Callback<LobbyCreated_t> _lobbyCreated;
+    protected Callback<GameLobbyJoinRequested_t> _joinRequest;
+    protected Callback<LobbyEnter_t> _lobbyEntered;
 
     private const string HostAddressKey = "HostAddress";
 
@@ -15,9 +15,9 @@ public class SteamLobbyManager : MonoBehaviour
     {
         if (!SteamManager.Initialized) { return; }
 
-        LobbyCreated = Callback<LobbyCreated_t>.Create(OnLobbyCreated);
-        JoinRequest = Callback<GameLobbyJoinRequested_t>.Create(OnJoinRequest);
-        LobbyEntered = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
+        _lobbyCreated = Callback<LobbyCreated_t>.Create(OnLobbyCreated);
+        _joinRequest = Callback<GameLobbyJoinRequested_t>.Create(OnJoinRequest);
+        _lobbyEntered = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
     }
 
     public void HostLobby()

@@ -32,17 +32,17 @@ public class LobbyNetworkSync : NetworkBehaviour
             ClientId == other.ClientId && PlayerName == other.PlayerName && IsReady == other.IsReady;
     }
 
-    private NetworkList<LobbyPlayerState> m_Players;
+    private NetworkList<LobbyPlayerState> _players;
 
     // 외부 읽기 전용
-    public int PlayerCount => m_Players?.Count ?? 0;
-    public LobbyPlayerState GetPlayer(int index) => m_Players[index];
+    public int PlayerCount => _players?.Count ?? 0;
+    public LobbyPlayerState GetPlayer(int index) => _players[index];
     public bool AllReady
     {
         get
         {
-            if (m_Players == null || m_Players.Count == 0) return false;
-            foreach (var p in m_Players)
+            if (_players == null || _players.Count == 0) return false;
+            foreach (var p in _players)
                 if (!p.IsReady) return false;
             return true;
         }
@@ -54,13 +54,13 @@ public class LobbyNetworkSync : NetworkBehaviour
 
     private void Awake()
     {
-        m_Players = new NetworkList<LobbyPlayerState>();
+        _players = new NetworkList<LobbyPlayerState>();
     }
 
     public override void OnNetworkSpawn()
     {
         Instance = this;
-        m_Players.OnListChanged += _ => OnLobbyStateChanged?.Invoke();
+        _players.OnListChanged += _ => OnLobbyStateChanged?.Invoke();
 
         if (IsServer)
         {
@@ -85,7 +85,7 @@ public class LobbyNetworkSync : NetworkBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         }
-        m_Players.OnListChanged -= _ => OnLobbyStateChanged?.Invoke();
+        _players.OnListChanged -= _ => OnLobbyStateChanged?.Invoke();
     }
 
     private void OnClientConnected(ulong clientId)
@@ -96,15 +96,15 @@ public class LobbyNetworkSync : NetworkBehaviour
     private void OnClientDisconnected(ulong clientId)
     {
         if (!IsServer) return;
-        for (int i = 0; i < m_Players.Count; i++)
+        for (int i = 0; i < _players.Count; i++)
         {
-            if (m_Players[i].ClientId == clientId) { m_Players.RemoveAt(i); return; }
+            if (_players[i].ClientId == clientId) { _players.RemoveAt(i); return; }
         }
     }
 
     private void AddPlayer(ulong clientId)
     {
-        m_Players.Add(new LobbyPlayerState { ClientId = clientId, PlayerName = "...", IsReady = false });
+        _players.Add(new LobbyPlayerState { ClientId = clientId, PlayerName = "...", IsReady = false });
     }
 
     private string GetMyName()
@@ -117,26 +117,26 @@ public class LobbyNetworkSync : NetworkBehaviour
     private void RegisterSelfServerRpc(string name, ServerRpcParams p = default)
     {
         ulong id = p.Receive.SenderClientId;
-        for (int i = 0; i < m_Players.Count; i++)
+        for (int i = 0; i < _players.Count; i++)
         {
-            if (m_Players[i].ClientId == id)
+            if (_players[i].ClientId == id)
             {
-                var s = m_Players[i]; s.PlayerName = name; m_Players[i] = s; return;
+                var s = _players[i]; s.PlayerName = name; _players[i] = s; return;
             }
         }
         // 아직 안 들어온 경우 추가
-        m_Players.Add(new LobbyPlayerState { ClientId = id, PlayerName = name, IsReady = false });
+        _players.Add(new LobbyPlayerState { ClientId = id, PlayerName = name, IsReady = false });
     }
 
     [ServerRpc(RequireOwnership = false)]
     public void ToggleReadyServerRpc(ServerRpcParams p = default)
     {
         ulong id = p.Receive.SenderClientId;
-        for (int i = 0; i < m_Players.Count; i++)
+        for (int i = 0; i < _players.Count; i++)
         {
-            if (m_Players[i].ClientId == id)
+            if (_players[i].ClientId == id)
             {
-                var s = m_Players[i]; s.IsReady = !s.IsReady; m_Players[i] = s; return;
+                var s = _players[i]; s.IsReady = !s.IsReady; _players[i] = s; return;
             }
         }
     }

@@ -7,11 +7,11 @@ using RaybelCreation.Netcode.Transports.Steam;
 [RequireComponent(typeof(NetworkManager))]
 public class NetworkBootstrap : MonoBehaviour
 {
-    private NetworkManager m_NetworkManager;
+    private NetworkManager _networkManager;
 
     private void Awake()
     {
-        m_NetworkManager = GetComponent<NetworkManager>();
+        _networkManager = GetComponent<NetworkManager>();
     }
 
     private void Start()
@@ -38,14 +38,14 @@ public class NetworkBootstrap : MonoBehaviour
         utp.ConnectionData.Port = 7777;
         utp.ConnectionData.ServerListenAddress = "0.0.0.0";
         
-        m_NetworkManager.NetworkConfig.NetworkTransport = utp;
+        _networkManager.NetworkConfig.NetworkTransport = utp;
         Debug.Log("Editor Mode: Switched to UnityTransport (Localhost) for local testing.");
 #else
         // 빌드된 게임(실제 배포판)에서는 Steam Transport를 사용
         var steamTransport = GetComponent<SteamNetworkTransport>();
         if (steamTransport == null) steamTransport = gameObject.AddComponent<SteamNetworkTransport>();
         
-        m_NetworkManager.NetworkConfig.NetworkTransport = steamTransport;
+        _networkManager.NetworkConfig.NetworkTransport = steamTransport;
         Debug.Log("Build Mode: Switched to SteamNetworkTransport.");
 #endif
     }
@@ -54,26 +54,26 @@ public class NetworkBootstrap : MonoBehaviour
     {
         GUILayout.BeginArea(new Rect(10, 10, 300, 300));
         
-        if (m_NetworkManager == null)
+        if (_networkManager == null)
         {
             GUILayout.Label("NetworkManager is not ready or missing.");
             GUILayout.EndArea();
             return;
         }
 
-        if (!m_NetworkManager.IsClient && !m_NetworkManager.IsServer)
+        if (!_networkManager.IsClient && !_networkManager.IsServer)
         {
             if (GUILayout.Button("Start Host"))
             {
                 SetupTransport();
 #if UNITY_EDITOR
-                m_NetworkManager.StartHost();
+                _networkManager.StartHost();
 #else
                 var lobbyManager = GetComponent<SteamLobbyManager>();
                 if (lobbyManager != null) {
                     lobbyManager.HostLobby();
                 } else {
-                    m_NetworkManager.StartHost();
+                    _networkManager.StartHost();
                 }
 #endif
             }
@@ -81,15 +81,15 @@ public class NetworkBootstrap : MonoBehaviour
             if (GUILayout.Button("Start Client (Local Only)"))
             {
                 SetupTransport();
-                m_NetworkManager.StartClient();
+                _networkManager.StartClient();
             }
         }
         else
         {
-            GUILayout.Label($"Mode: {(m_NetworkManager.IsHost ? "Host" : "Client")}");
+            GUILayout.Label($"Mode: {(_networkManager.IsHost ? "Host" : "Client")}");
             if (GUILayout.Button("Disconnect"))
             {
-                m_NetworkManager.Shutdown();
+                _networkManager.Shutdown();
             }
         }
 

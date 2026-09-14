@@ -7,21 +7,21 @@ using UnityEngine.UI;
 /// </summary>
 public class LobbyUIController : MonoBehaviour
 {
-    [SerializeField] private GameObject m_LobbyPanel;
-    [SerializeField] private Text[] m_PlayerNameTexts;
-    [SerializeField] private Text[] m_PlayerReadyTexts;
-    [SerializeField] private Button m_ReadyButton;
-    [SerializeField] private Button m_StartButton;
+    [SerializeField] private GameObject _lobbyPanel;
+    [SerializeField] private Text[] _playerNameTexts;
+    [SerializeField] private Text[] _playerReadyTexts;
+    [SerializeField] private Button _readyButton;
+    [SerializeField] private Button _startButton;
 
-    private LobbyNetworkSync m_Sync;
+    private LobbyNetworkSync _sync;
 
     private void Start()
     {
         // 시작하면 패널 숨김 — 접속 후 OnConnected에서 표시
-        m_LobbyPanel.SetActive(false);
+        _lobbyPanel.SetActive(false);
 
-        m_ReadyButton.onClick.AddListener(OnReadyClicked);
-        m_StartButton.onClick.AddListener(OnStartClicked);
+        _readyButton.onClick.AddListener(OnReadyClicked);
+        _startButton.onClick.AddListener(OnStartClicked);
 
         // NetworkManager 이벤트 구독
         Unity.Netcode.NetworkManager.Singleton.OnClientConnectedCallback += OnConnected;
@@ -35,8 +35,8 @@ public class LobbyUIController : MonoBehaviour
             Unity.Netcode.NetworkManager.Singleton.OnClientConnectedCallback -= OnConnected;
             Unity.Netcode.NetworkManager.Singleton.OnClientDisconnectCallback -= OnDisconnected;
         }
-        if (m_Sync != null)
-            m_Sync.OnLobbyStateChanged -= RefreshUI;
+        if (_sync != null)
+            _sync.OnLobbyStateChanged -= RefreshUI;
     }
 
     // 로컬 클라이언트가 연결되었을 때 (Host 포함)
@@ -46,7 +46,7 @@ public class LobbyUIController : MonoBehaviour
         // 내 클라이언트 ID일 때만 패널 표시
         if (clientId != nm.LocalClientId && !nm.IsHost) return;
 
-        m_LobbyPanel.SetActive(true);
+        _lobbyPanel.SetActive(true);
 
         // LobbyNetworkSync가 Spawn될 때까지 잠깐 기다려야 할 수 있으므로 Coroutine으로 구독
         StartCoroutine(WaitAndSubscribe());
@@ -62,10 +62,10 @@ public class LobbyUIController : MonoBehaviour
             yield return null;
         }
 
-        m_Sync = LobbyNetworkSync.Instance;
-        if (m_Sync != null)
+        _sync = LobbyNetworkSync.Instance;
+        if (_sync != null)
         {
-            m_Sync.OnLobbyStateChanged += RefreshUI;
+            _sync.OnLobbyStateChanged += RefreshUI;
             RefreshUI();
         }
         else
@@ -79,45 +79,45 @@ public class LobbyUIController : MonoBehaviour
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (clientId == nm.LocalClientId)
         {
-            m_LobbyPanel.SetActive(false);
-            if (m_Sync != null) m_Sync.OnLobbyStateChanged -= RefreshUI;
-            m_Sync = null;
+            _lobbyPanel.SetActive(false);
+            if (_sync != null) _sync.OnLobbyStateChanged -= RefreshUI;
+            _sync = null;
         }
     }
 
     private void RefreshUI()
     {
-        if (m_Sync == null) return;
+        if (_sync == null) return;
 
         bool isServer = Unity.Netcode.NetworkManager.Singleton.IsServer;
 
         for (int i = 0; i < 4; i++)
         {
-            if (i < m_Sync.PlayerCount)
+            if (i < _sync.PlayerCount)
             {
-                var p = m_Sync.GetPlayer(i);
-                m_PlayerNameTexts[i].text = p.PlayerName.ToString();
-                m_PlayerReadyTexts[i].text = p.IsReady ? "Ready ✓" : "Waiting...";
-                m_PlayerReadyTexts[i].color = p.IsReady ? Color.green : Color.red;
+                var p = _sync.GetPlayer(i);
+                _playerNameTexts[i].text = p.PlayerName.ToString();
+                _playerReadyTexts[i].text = p.IsReady ? "Ready ✓" : "Waiting...";
+                _playerReadyTexts[i].color = p.IsReady ? Color.green : Color.red;
             }
             else
             {
-                m_PlayerNameTexts[i].text = "Empty Slot";
-                m_PlayerReadyTexts[i].text = "";
+                _playerNameTexts[i].text = "Empty Slot";
+                _playerReadyTexts[i].text = "";
             }
         }
 
-        m_StartButton.gameObject.SetActive(isServer);
-        m_StartButton.interactable = m_Sync.AllReady && m_Sync.PlayerCount > 0;
+        _startButton.gameObject.SetActive(isServer);
+        _startButton.interactable = _sync.AllReady && _sync.PlayerCount > 0;
     }
 
     private void OnReadyClicked()
     {
-        if (m_Sync != null) m_Sync.ToggleReadyServerRpc();
+        if (_sync != null) _sync.ToggleReadyServerRpc();
     }
 
     private void OnStartClicked()
     {
-        if (m_Sync != null) m_Sync.StartGame();
+        if (_sync != null) _sync.StartGame();
     }
 }
