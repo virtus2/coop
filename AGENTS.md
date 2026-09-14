@@ -4,6 +4,7 @@ When working on this project, please adhere to the following rules and guideline
 
 ## Documentation Map
 - `docs/coding-convention.md`: C# and Unity naming conventions and coding style guidelines.
+- `docs/workflow.md`: 에이전트가 작업을 수행할 때 따라야 하는 표준 절차 및 워크플로우 명시.
 
 ## Project Settings
 - **Input System:** Always use the new Unity `InputSystem`. Do not use the legacy `Input` manager.
