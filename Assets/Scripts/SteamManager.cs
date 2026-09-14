@@ -34,6 +34,10 @@ public class SteamManager : MonoBehaviour {
         DontDestroyOnLoad(gameObject);
 
         if (!s_EverInitialized) {
+#if UNITY_EDITOR
+            Debug.Log("[Steamworks.NET] Disabled in Editor to prevent Steam from locking the app in a 'Playing' state.");
+            return;
+#endif
             // This is almost always an error.
             if (!Packsize.Test()) {
                 Debug.LogError("[Steamworks.NET] Packsize Test returned false, the wrong version of Steamworks.NET is being run in this platform.", this);
@@ -59,12 +63,6 @@ public class SteamManager : MonoBehaviour {
         }
 
         // Initializes the Steamworks API.
-        // If this returns false then this indicates one of the following conditions:
-        // [*] The Steam client isn't running. A running Steam client is required to provide implementations of the various Steamworks interfaces.
-        // [*] The Steam client couldn't determine the App ID of game. If you're running your application from the executable or debugger directly then you must have a [code-inline]steam_appid.txt[/code-inline] in your game directory next to the executable, with your app ID in it and nothing else. Steam will look for this file in the current working directory. If you are running your executable from a different directory you may need to relocate the [code-inline]steam_appid.txt[/code-inline] file.
-        // [*] Your application is not running under the same OS user context as the Steam client, such as a different user or administration access level.
-        // [*] Ensure that you own a license for the App ID on the currently active Steam account. Your game must show up in your Steam library.
-        // [*] Your App ID is not completely set up, i.e. in Release State: Unavailable, or it's missing default packages.
         m_bInitialized = SteamAPI.Init();
         if (!m_bInitialized) {
             Debug.LogError("[Steamworks.NET] SteamAPI_Init() failed. Refer to Valve's documentation or the comment above this line for more information.", this);
