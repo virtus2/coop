@@ -49,8 +49,8 @@ public class SteamManager : MonoBehaviour {
         }
 
         try {
-            // If Steam is not running or the game wasn't started through Steam, SteamAPI_RestartAppIfNecessary starts the
-            // Steam client and also launches this game again if the User owns it. This can act as a rudimentary form of DRM.
+            // NOTE: 개발/테스트(Spacewar 480) 단계에서는 RestartAppIfNecessary가 게임을 종료(Application.Quit)시키는 현상을 방지하기 위해 비활성화합니다.
+            // 스팀 스토어 정식 출시 및 DRM 적용 시 필요에 따라 활성화하십시오.
             if (SteamAPI.RestartAppIfNecessary((AppId_t)480)) {
                 Application.Quit();
                 return;

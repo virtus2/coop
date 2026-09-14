@@ -2,6 +2,7 @@
   "dependencies": {
     "com.raybelcreation.netcode.transport.steam": "https://github.com/RaybelGames/Steam-Network-Transport-for-NGO.git",
     "com.rlabrecque.steamworks.net": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net",
+    "com.yasirkula.ingamedebugconsole": "https://github.com/yasirkula/UnityIngameDebugConsole.git",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.cinemachine": "3.1.7",
     "com.unity.collab-proxy": "2.11.3",

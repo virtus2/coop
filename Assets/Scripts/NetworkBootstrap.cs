@@ -3,11 +3,13 @@ using Unity.Netcode;
 using Steamworks;
 using Unity.Netcode.Transports.UTP;
 using RaybelCreation.Netcode.Transports.Steam;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(NetworkManager))]
 public class NetworkBootstrap : MonoBehaviour
 {
     private NetworkManager _networkManager;
+    private string _lobbyIdInput = "";
 
     private void Awake()
     {
@@ -52,7 +54,14 @@ public class NetworkBootstrap : MonoBehaviour
 
     private void OnGUI()
     {
-        GUILayout.BeginArea(new Rect(10, 10, 300, 300));
+        // LobbyScene이나 GameScene에서는 호스트/클라이언트 연결 버튼 숨김
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        if (activeSceneName == "LobbyScene" || activeSceneName == "GameScene")
+        {
+            return;
+        }
+
+        GUILayout.BeginArea(new Rect(10, 10, 320, 350));
         
         if (_networkManager == null)
         {
@@ -63,31 +72,80 @@ public class NetworkBootstrap : MonoBehaviour
 
         if (!_networkManager.IsClient && !_networkManager.IsServer)
         {
-            if (GUILayout.Button("Start Host"))
+            if (GUILayout.Button("Start Host", GUILayout.Height(40)))
             {
                 SetupTransport();
 #if UNITY_EDITOR
-                _networkManager.StartHost();
+                if (_networkManager.StartHost())
+                {
+                    _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
+                }
 #else
-                var lobbyManager = GetComponent<SteamLobbyManager>();
-                if (lobbyManager != null) {
-                    lobbyManager.HostLobby();
-                } else {
-                    _networkManager.StartHost();
+                if (SteamLobbyManager.Instance != null)
+                {
+                    SteamLobbyManager.Instance.HostLobby();
+                }
+                else
+                {
+                    var lobbyManager = GetComponent<SteamLobbyManager>();
+                    if (lobbyManager != null) 
+                    {
+                        lobbyManager.HostLobby();
+                    } 
+                    else if (_networkManager.StartHost())
+                    {
+                        _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
+                    }
                 }
 #endif
             }
 
-            if (GUILayout.Button("Start Client (Local Only)"))
+            GUILayout.Space(15);
+
+#if UNITY_EDITOR
+            if (GUILayout.Button("Start Client (Local Only)", GUILayout.Height(40)))
             {
                 SetupTransport();
                 _networkManager.StartClient();
             }
+
+            GUILayout.Space(10);
+            GUILayout.Label("Join by Steam Lobby ID (Editor):");
+            _lobbyIdInput = GUILayout.TextField(_lobbyIdInput, GUILayout.Height(25));
+            if (GUILayout.Button("Join Lobby", GUILayout.Height(30)))
+            {
+                if (SteamLobbyManager.Instance != null)
+                {
+                    SteamLobbyManager.Instance.JoinLobby(_lobbyIdInput);
+                }
+            }
+#else
+            GUILayout.Label("Steam Lobby ID:");
+            _lobbyIdInput = GUILayout.TextField(_lobbyIdInput, GUILayout.Height(30));
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Paste", GUILayout.Height(35), GUILayout.Width(70)))
+            {
+                _lobbyIdInput = GUIUtility.systemCopyBuffer;
+            }
+            if (GUILayout.Button("Join Lobby", GUILayout.Height(35)))
+            {
+                if (SteamLobbyManager.Instance != null)
+                {
+                    SteamLobbyManager.Instance.JoinLobby(_lobbyIdInput);
+                }
+                else
+                {
+                    Debug.LogWarning("[NetworkBootstrap] SteamLobbyManager.Instance is null.");
+                }
+            }
+            GUILayout.EndHorizontal();
+#endif
         }
         else
         {
             GUILayout.Label($"Mode: {(_networkManager.IsHost ? "Host" : "Client")}");
-            if (GUILayout.Button("Disconnect"))
+            if (GUILayout.Button("Disconnect", GUILayout.Height(30)))
             {
                 _networkManager.Shutdown();
             }
