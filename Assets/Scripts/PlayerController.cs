@@ -1,4 +1,4 @@
-﻿using Unity.Cinemachine;
+using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +11,8 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : NetworkBehaviour
 {
+    public static PlayerController LocalInstance { get; private set; }
+
     [Header("Movement Settings")]
     [SerializeField] private float _moveSpeed = 5f;
     [SerializeField] private float _gravity = -9.81f;
@@ -33,14 +35,31 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private InputActionAsset _inputActionsAsset;
 
     private CharacterController _characterController;
+    private ClientNetworkTransform _clientNetworkTransform;
     private InputAction _moveAction;
     private InputAction _lookAction;
     private Vector3 _velocity;
     private float _cameraPitch;
+    private bool _isInputEnabled = true;
+
+    private readonly NetworkVariable<float> _networkCameraPitch = new NetworkVariable<float>(
+        0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public float CameraPitch => IsOwner ? _cameraPitch : _networkCameraPitch.Value;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatic()
+    {
+        LocalInstance = null;
+    }
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+        _clientNetworkTransform = GetComponent<ClientNetworkTransform>();
         if (_characterController == null)
         {
             _characterController = gameObject.AddComponent<CharacterController>();
@@ -80,6 +99,9 @@ public class PlayerController : NetworkBehaviour
     {
         if (IsOwner)
         {
+            LocalInstance = this;
+            _isInputEnabled = true;
+
             // 로컬 플레이어: 1인칭 카메라 활성화 및 높은 우선순위 부여
             if (_firstPersonCamera != null)
             {
@@ -115,6 +137,11 @@ public class PlayerController : NetworkBehaviour
     {
         if (IsOwner)
         {
+            if (LocalInstance == this)
+            {
+                LocalInstance = null;
+            }
+
             _moveAction?.Disable();
             _lookAction?.Disable();
 
@@ -171,9 +198,22 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    /// <summary>
+    /// 메뉴 UI 오픈 등으로 인해 로컬 플레이어 입력(시점 회전, 이동)을 활성화하거나 비활성화합니다.
+    /// </summary>
+    public void SetInputEnabled(bool isEnabled)
+    {
+        _isInputEnabled = isEnabled;
+    }
+
     private void Update()
     {
         if (!IsOwner || _characterController == null)
+        {
+            return;
+        }
+
+        if (!_isInputEnabled)
         {
             return;
         }
@@ -200,6 +240,11 @@ public class PlayerController : NetworkBehaviour
         if (_cameraTarget != null)
         {
             _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+        }
+
+        if (IsSpawned && IsOwner && Mathf.Abs(_networkCameraPitch.Value - _cameraPitch) > 0.05f)
+        {
+            _networkCameraPitch.Value = _cameraPitch;
         }
     }
 
@@ -228,5 +273,52 @@ public class PlayerController : NetworkBehaviour
         motion.y = _velocity.y * Time.deltaTime;
 
         _characterController.Move(motion);
+    }
+
+    /// <summary>
+    /// 지정된 위치, 회전 및 카메라 상하 각도로 캐릭터를 즉시 텔레포트합니다.
+    /// CharacterController와 ClientNetworkTransform을 모두 갱신하여 클라이언트 권한 동기화를 유지합니다.
+    /// </summary>
+    public void Teleport(Vector3 targetPosition, Quaternion targetRotation, float cameraPitch = 0f)
+    {
+        if (_characterController != null)
+        {
+            _characterController.enabled = false;
+        }
+
+        transform.position = targetPosition;
+        transform.rotation = targetRotation;
+
+        _cameraPitch = Mathf.Clamp(cameraPitch, _bottomClamp, _topClamp);
+        if (_cameraTarget != null)
+        {
+            _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+        }
+
+        if (IsSpawned && IsOwner)
+        {
+            _networkCameraPitch.Value = _cameraPitch;
+        }
+
+        if (_clientNetworkTransform != null)
+        {
+            _clientNetworkTransform.Teleport(targetPosition, targetRotation, transform.localScale);
+        }
+
+        if (_characterController != null)
+        {
+            _characterController.enabled = true;
+        }
+    }
+
+    /// <summary>
+    /// 서버에서 호출하여 소유자 클라이언트에게 텔레포트를 수행하도록 지시합니다.
+    /// </summary>
+    [ClientRpc]
+    public void TeleportClientRpc(Vector3 targetPosition, Quaternion targetRotation, float cameraPitch, ClientRpcParams clientRpcParams = default)
+    {
+        if (!IsOwner) return;
+        Teleport(targetPosition, targetRotation, cameraPitch);
+        Debug.Log($"[PlayerController] 소유 클라이언트에서 텔레포트 수행 완료: 위치 {targetPosition}, 각도 {targetRotation.eulerAngles}, 카메라 {cameraPitch}");
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -157,8 +157,20 @@ public class PlayerSpawner : MonoBehaviour
             return;
         }
 
-        Vector3 spawnPosition = GetSpawnPosition(_spawnedClients.Count);
+        Vector3 spawnPosition;
         Quaternion spawnRotation = Quaternion.identity;
+
+        if (SaveLoadManager.Instance != null && SaveLoadManager.Instance.TryGetSavedTransform(clientId, out Vector3 savedPos, out Quaternion savedRot, out _))
+        {
+            spawnPosition = savedPos;
+            spawnRotation = savedRot;
+            Debug.Log($"[PlayerSpawner] 클라이언트 {clientId}의 세이브 위치 및 각도를 적용하여 스폰합니다 (위치: {spawnPosition}, 각도: {spawnRotation.eulerAngles})");
+        }
+        else
+        {
+            spawnPosition = GetSpawnPosition(_spawnedClients.Count);
+            Debug.Log($"[PlayerSpawner] 클라이언트 {clientId}의 세이브 데이터가 없어 기본 위치를 사용합니다: {spawnPosition}");
+        }
 
         GameObject playerInstance = Instantiate(_playerPrefab, spawnPosition, spawnRotation);
         SceneManager.MoveGameObjectToScene(playerInstance, targetScene);
@@ -168,7 +180,12 @@ public class PlayerSpawner : MonoBehaviour
         {
             networkObject.SpawnAsPlayerObject(clientId, true);
             _spawnedClients.Add(clientId);
-            Debug.Log($"[PlayerSpawner] 클라이언트 {clientId}의 플레이어 캐릭터 스폰 완료 (위치: {spawnPosition})");
+            Debug.Log($"[PlayerSpawner] 클라이언트 {clientId}의 플레이어 캐릭터 스폰 완료 (위치: {spawnPosition}, 각도: {spawnRotation.eulerAngles})");
+
+            if (SaveLoadManager.Instance != null)
+            {
+                SaveLoadManager.Instance.ApplySaveDataToPlayer(clientId, networkObject);
+            }
         }
         else
         {

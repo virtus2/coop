@@ -141,7 +141,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.000022888184
+      value: -0.00006866455
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
@@ -791,6 +791,7 @@ GameObject:
   - component: {fileID: 517501582}
   - component: {fileID: 517501583}
   - component: {fileID: 517501584}
+  - component: {fileID: 517501585}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -906,6 +907,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de81cebe87cee8e4aaa824955d2afa69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SteamLobbyManager
+--- !u!114 &517501585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517501577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82917aaafa56bfa4ebb96042ae43cba5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveLoadManager
 --- !u!1 &780216289
 GameObject:
   m_ObjectHideFlags: 0

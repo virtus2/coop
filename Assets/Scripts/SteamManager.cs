@@ -21,6 +21,9 @@ public class SteamManager : MonoBehaviour {
     protected bool m_bInitialized = false;
     public static bool Initialized {
         get {
+            if(s_instance == null) {
+                return false;
+            }
             return Instance.m_bInitialized;
         }
     }
