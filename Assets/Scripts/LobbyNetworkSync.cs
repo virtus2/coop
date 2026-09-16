@@ -141,9 +141,32 @@ public class LobbyNetworkSync : NetworkBehaviour
         }
     }
 
+    private bool _isStartingGame = false;
+
     public void StartGame()
     {
-        if (!IsServer || !AllReady) return;
-        NetworkManager.Singleton.SceneManager.LoadScene("GameScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        if (!IsServer || !AllReady || _isStartingGame) return;
+        _isStartingGame = true;
+
+        StartGameTransitionClientRpc();
+        StartCoroutine(StartGameWithFadeRoutine());
+    }
+
+    [ClientRpc]
+    private void StartGameTransitionClientRpc()
+    {
+        if (ScreenFader.Instance != null)
+        {
+            ScreenFader.Instance.StartGameTransition(1.5f, 1.5f);
+        }
+    }
+
+    private System.Collections.IEnumerator StartGameWithFadeRoutine()
+    {
+        yield return new WaitForSecondsRealtime(1.5f);
+        if (IsServer && NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene("GameScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
     }
 }

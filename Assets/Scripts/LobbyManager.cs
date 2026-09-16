@@ -21,6 +21,7 @@ public class LobbyManager : NetworkBehaviour
     private const string MaskedId = "••••••••••••••••••";
     private bool _isShowingId = false;
     private Coroutine _hideIdCoroutine;
+    private bool _isStartingGame = false;
 
     public struct LobbyPlayerState : INetworkSerializable, System.IEquatable<LobbyPlayerState>
     {
@@ -53,6 +54,7 @@ public class LobbyManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        _isStartingGame = false;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -131,6 +133,8 @@ public class LobbyManager : NetworkBehaviour
         {
             _lobbyUIPanel.SetActive(false);
         }
+
+        _isStartingGame = false;
     }
 
     private string GetMyPlayerName()
@@ -417,6 +421,45 @@ public class LobbyManager : NetworkBehaviour
 
     private void StartGame()
     {
+        if (!IsServer || _isStartingGame)
+        {
+            return;
+        }
+
+        _isStartingGame = true;
+
+        if (_startGameButton != null)
+        {
+            _startGameButton.interactable = false;
+        }
+
+        // 모든 클라이언트에 1.5초 페이드아웃 및 GameScene 진입 시 페이드인 지시
+        StartGameTransitionClientRpc();
+
+        // 1.5초 페이드아웃 완료 후 씬 전환
+        StartCoroutine(StartGameWithFadeRoutine());
+    }
+
+    [ClientRpc]
+    private void StartGameTransitionClientRpc()
+    {
+        // 로비 버튼 상호작용 비활성화
+        if (_startGameButton != null) _startGameButton.interactable = false;
+        if (_readyButton != null) _readyButton.interactable = false;
+        if (_inviteButton != null) _inviteButton.interactable = false;
+
+        // 1.5초 페이드아웃 시작 및 GameScene 로드 시 1.5초 페이드인 예약
+        if (ScreenFader.Instance != null)
+        {
+            ScreenFader.Instance.StartGameTransition(1.5f, 1.5f);
+        }
+    }
+
+    private System.Collections.IEnumerator StartGameWithFadeRoutine()
+    {
+        // 1.5초 페이드아웃 대기
+        yield return new WaitForSecondsRealtime(1.5f);
+
         if (IsServer && NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
             // GameScene으로 씬 전환 (NetworkSceneManager 사용)
