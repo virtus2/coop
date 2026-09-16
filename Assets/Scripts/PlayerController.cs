@@ -23,6 +23,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float _bottomClamp = -80f;
     [SerializeField] private Transform _cameraTarget;
     [SerializeField] private CinemachineCamera _firstPersonCamera;
+    [SerializeField] private Transform _headTransform;
     [SerializeField] private Renderer _bodyRenderer;
 
     [Header("Input Action References")]
@@ -84,13 +85,31 @@ public class PlayerController : NetworkBehaviour
             _firstPersonCamera = GetComponentInChildren<CinemachineCamera>(true);
         }
 
-        // BodyRenderer fallback (본인 Capsule)
+        // HeadTransform fallback
+        if (_headTransform == null)
+        {
+            Transform foundHead = transform.Find("Head");
+            if (foundHead != null)
+            {
+                _headTransform = foundHead;
+            }
+        }
+
+        // BodyRenderer fallback
         if (_bodyRenderer == null)
         {
-            Transform capsule = transform.Find("Capsule");
-            if (capsule != null)
+            Transform body = transform.Find("Body");
+            if (body != null)
             {
-                _bodyRenderer = capsule.GetComponent<Renderer>();
+                _bodyRenderer = body.GetComponent<Renderer>();
+            }
+            else
+            {
+                Transform capsule = transform.Find("Capsule");
+                if (capsule != null)
+                {
+                    _bodyRenderer = capsule.GetComponent<Renderer>();
+                }
             }
         }
     }
@@ -109,11 +128,8 @@ public class PlayerController : NetworkBehaviour
                 _firstPersonCamera.Priority.Value = 20;
             }
 
-            // 로컬 캐릭터의 메시가 시야를 가리지 않도록 1인칭 전용 섀도우 설정
-            if (_bodyRenderer != null)
-            {
-                _bodyRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
-            }
+            // 1인칭 시점: 로컬 캐릭터의 모든 메시를 Shadow Only로 설정하여 시야를 가리지 않으면서 그림자만 생성
+            SetCharacterShadowCastingMode(true);
 
             // 마우스 커서 잠금
             Cursor.lockState = CursorLockMode.Locked;
@@ -129,7 +145,34 @@ public class PlayerController : NetworkBehaviour
                 _firstPersonCamera.gameObject.SetActive(false);
             }
 
-            enabled = false;
+            // 원격 플레이어: 정상적으로 모든 부위가 보이도록 ShadowCastingMode.On 적용
+            SetCharacterShadowCastingMode(false);
+
+            // 원격 플레이어 초기 머리 각도 적용
+            if (_headTransform != null)
+            {
+                _headTransform.localRotation = Quaternion.Euler(_networkCameraPitch.Value, 0f, 0f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 로컬 플레이어(1인칭)인 경우 모든 자식 렌더러를 ShadowsOnly로 설정하고,
+    /// 원격 플레이어인 경우 On으로 설정합니다.
+    /// </summary>
+    private void SetCharacterShadowCastingMode(bool isFirstPersonOnly)
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        var shadowMode = isFirstPersonOnly
+            ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+            : UnityEngine.Rendering.ShadowCastingMode.On;
+
+        foreach (Renderer r in renderers)
+        {
+            if (r != null)
+            {
+                r.shadowCastingMode = shadowMode;
+            }
         }
     }
 
@@ -208,18 +251,31 @@ public class PlayerController : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsOwner || _characterController == null)
+        if (!IsOwner)
         {
+            UpdateRemoteHead();
             return;
         }
 
-        if (!_isInputEnabled)
+        if (_characterController == null || !_isInputEnabled)
         {
             return;
         }
 
         HandleLook();
         HandleMovement();
+    }
+
+    /// <summary>
+    /// 원격 플레이어의 머리 상하 각도를 네트워크 동기화 값으로 부드럽게 보간합니다.
+    /// </summary>
+    private void UpdateRemoteHead()
+    {
+        if (_headTransform != null)
+        {
+            Quaternion targetRotation = Quaternion.Euler(_networkCameraPitch.Value, 0f, 0f);
+            _headTransform.localRotation = Quaternion.Slerp(_headTransform.localRotation, targetRotation, Time.deltaTime * 20f);
+        }
     }
 
     private void HandleLook()
@@ -233,13 +289,18 @@ public class PlayerController : NetworkBehaviour
         // 1. 플레이어 몸체 좌우 회전 (Yaw)
         transform.Rotate(Vector3.up * mouseX);
 
-        // 2. 카메라 상하 회전 (Pitch 제한)
+        // 2. 카메라 및 머리 상하 회전 (Pitch 제한)
         _cameraPitch -= mouseY;
         _cameraPitch = Mathf.Clamp(_cameraPitch, _bottomClamp, _topClamp);
 
         if (_cameraTarget != null)
         {
             _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+        }
+
+        if (_headTransform != null)
+        {
+            _headTransform.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
         }
 
         if (IsSpawned && IsOwner && Mathf.Abs(_networkCameraPitch.Value - _cameraPitch) > 0.05f)
@@ -293,6 +354,11 @@ public class PlayerController : NetworkBehaviour
         if (_cameraTarget != null)
         {
             _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+        }
+
+        if (_headTransform != null)
+        {
+            _headTransform.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
         }
 
         if (IsSpawned && IsOwner)

@@ -448,7 +448,8 @@ MonoBehaviour:
   _bottomClamp: -80
   _cameraTarget: {fileID: 3336399786481951659}
   _firstPersonCamera: {fileID: 3285035400602289599}
-  _bodyRenderer: {fileID: 0}
+  _headTransform: {fileID: 5946054160253707829}
+  _bodyRenderer: {fileID: 100637185518681515}
   _moveActionReference: {fileID: 0}
   _lookActionReference: {fileID: 0}
   _inputActionsAsset: {fileID: 0}
