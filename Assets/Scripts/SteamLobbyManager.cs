@@ -255,7 +255,10 @@ public class SteamLobbyManager : MonoBehaviour
 
     private void SetupSteamTransportForHost()
     {
-        if (NetworkManager.Singleton == null) return;
+        if (NetworkManager.Singleton == null)
+        {
+            return;
+        }
 
 #if !UNITY_EDITOR
         var steamTransport = NetworkManager.Singleton.GetComponent<SteamNetworkTransport>();
@@ -269,7 +272,10 @@ public class SteamLobbyManager : MonoBehaviour
 
     private void SetupSteamTransportForClient(ulong hostSteamId)
     {
-        if (NetworkManager.Singleton == null) return;
+        if (NetworkManager.Singleton == null)
+        {
+            return;
+        }
 
 #if !UNITY_EDITOR
         var steamTransport = NetworkManager.Singleton.GetComponent<SteamNetworkTransport>();

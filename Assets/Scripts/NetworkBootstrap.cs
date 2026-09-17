@@ -14,6 +14,9 @@ public class NetworkBootstrap : MonoBehaviour
     private void Awake()
     {
         _networkManager = GetComponent<NetworkManager>();
+#if UNITY_EDITOR
+        SetupTransport();
+#endif
     }
 
     private void Start()
@@ -34,18 +37,33 @@ public class NetworkBootstrap : MonoBehaviour
 #if UNITY_EDITOR
         // 유니티 에디터에서는 로컬 테스트를 위해 UnityTransport (127.0.0.1)를 강제로 사용
         var utp = GetComponent<UnityTransport>();
-        if (utp == null) utp = gameObject.AddComponent<UnityTransport>();
+        if (utp == null)
+        {
+            utp = gameObject.AddComponent<UnityTransport>();
+        }
         
         utp.ConnectionData.Address = "127.0.0.1";
         utp.ConnectionData.Port = 7777;
         utp.ConnectionData.ServerListenAddress = "0.0.0.0";
         
         _networkManager.NetworkConfig.NetworkTransport = utp;
+
+        // 에디터에서 SteamNetworkTransport 비활성화
+        var steamTransport = GetComponent<SteamNetworkTransport>();
+        if (steamTransport != null)
+        {
+            steamTransport.enabled = false;
+        }
+
         Debug.Log("Editor Mode: Switched to UnityTransport (Localhost) for local testing.");
 #else
         // 빌드된 게임(실제 배포판)에서는 Steam Transport를 사용
         var steamTransport = GetComponent<SteamNetworkTransport>();
-        if (steamTransport == null) steamTransport = gameObject.AddComponent<SteamNetworkTransport>();
+        if (steamTransport == null)
+        {
+            steamTransport = gameObject.AddComponent<SteamNetworkTransport>();
+        }
+        steamTransport.enabled = true;
         
         _networkManager.NetworkConfig.NetworkTransport = steamTransport;
         Debug.Log("Build Mode: Switched to SteamNetworkTransport.");

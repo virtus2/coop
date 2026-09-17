@@ -71,23 +71,35 @@ public class ScreenFader : MonoBehaviour
 
     private void InitializeUI()
     {
-        if (_canvas != null) return;
+        if (_canvas != null)
+        {
+            return;
+        }
 
         // 1. Canvas 설정
         _canvas = gameObject.GetComponent<Canvas>();
-        if (_canvas == null) _canvas = gameObject.AddComponent<Canvas>();
+        if (_canvas == null)
+        {
+            _canvas = gameObject.AddComponent<Canvas>();
+        }
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _canvas.sortingOrder = 32767; // 최상단에 렌더링
 
         // 2. CanvasScaler 설정
         var scaler = gameObject.GetComponent<CanvasScaler>();
-        if (scaler == null) scaler = gameObject.AddComponent<CanvasScaler>();
+        if (scaler == null)
+        {
+            scaler = gameObject.AddComponent<CanvasScaler>();
+        }
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
         // 3. CanvasGroup 설정
         _canvasGroup = gameObject.GetComponent<CanvasGroup>();
-        if (_canvasGroup == null) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        if (_canvasGroup == null)
+        {
+            _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
         _canvasGroup.alpha = 0f;
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.interactable = false;
@@ -123,7 +135,10 @@ public class ScreenFader : MonoBehaviour
     public void FadeOut(float duration, Action onComplete = null)
     {
         InitializeUI();
-        if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+        if (_fadeCoroutine != null)
+        {
+            StopCoroutine(_fadeCoroutine);
+        }
         _fadeCoroutine = StartCoroutine(FadeRoutine(1f, duration, onComplete));
     }
 
@@ -133,13 +148,19 @@ public class ScreenFader : MonoBehaviour
     public void FadeIn(float duration, Action onComplete = null)
     {
         InitializeUI();
-        if (_fadeCoroutine != null) StopCoroutine(_fadeCoroutine);
+        if (_fadeCoroutine != null)
+        {
+            StopCoroutine(_fadeCoroutine);
+        }
         _fadeCoroutine = StartCoroutine(FadeRoutine(0f, duration, onComplete));
     }
 
     private IEnumerator FadeRoutine(float targetAlpha, float duration, Action onComplete)
     {
-        if (_canvasGroup == null) yield break;
+        if (_canvasGroup == null)
+        {
+            yield break;
+        }
 
         float startAlpha = _canvasGroup.alpha;
         _canvasGroup.blocksRaycasts = true;

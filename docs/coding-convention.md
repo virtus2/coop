@@ -3,9 +3,14 @@
 Adhere to standard C# and Unity naming conventions as outlined in the [Unity C# Scripting Guide](https://unity.com/how-to/naming-and-code-style-tips-c-scripting-unity#casing-terminology):
 - **Classes, Structs, Enums, Methods, Properties, Events:** `PascalCase` (e.g., `PlayerController`, `TakeDamage()`)
 - **Interfaces:** `PascalCase` starting with 'I' (e.g., `IDamageable`)
-- **Private/Protected Fields:** `_camelCase` (e.g., `_currentHealth`, `_moveSpeed`)
-- **Local Variables & Parameters:** `camelCase` (e.g., `targetPosition`, `deltaTime`)
-- **Constants & Static Readonly:** `PascalCase` or `UPPER_SNAKE_CASE` (e.g., `MaxPlayers`, `MAX_PLAYERS`)
+- **Private/Protected Fields:** `_camelCase` (e.g., `_currentHealth`, `_moveSpeed`). **Do NOT** use the `m_` prefix.
+- **Local Variables & Parameters:** `camelCase` (e.g., `targetPosition`, `deltaTime`).
+- **Booleans:** **Do NOT** use the `b` prefix for boolean values (e.g., use `isDead` instead of `bIsDead` or `bDead`).
+- **Constants & Static Readonly:** `PascalCase` or `UPPER_SNAKE_CASE` (e.g., `MaxPlayers`, `MAX_PLAYERS`).
+
+## Code Formatting
+
+- **Braces `{}`:** Always place opening and closing braces on a new line (Allman style).
 
 ## Unity Best Practices
 

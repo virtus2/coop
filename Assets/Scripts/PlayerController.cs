@@ -383,7 +383,11 @@ public class PlayerController : NetworkBehaviour
     [ClientRpc]
     public void TeleportClientRpc(Vector3 targetPosition, Quaternion targetRotation, float cameraPitch, ClientRpcParams clientRpcParams = default)
     {
-        if (!IsOwner) return;
+        if (!IsOwner)
+        {
+            return;
+        }
+
         Teleport(targetPosition, targetRotation, cameraPitch);
         Debug.Log($"[PlayerController] 소유 클라이언트에서 텔레포트 수행 완료: 위치 {targetPosition}, 각도 {targetRotation.eulerAngles}, 카메라 {cameraPitch}");
     }

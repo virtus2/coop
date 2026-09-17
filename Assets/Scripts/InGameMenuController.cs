@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -74,7 +74,10 @@ public class InGameMenuController : MonoBehaviour
 
     private void Update()
     {
-        if (_isExiting) return;
+        if (_isExiting)
+        {
+            return;
+        }
 
         // Unity New Input System을 통한 ESC 키 입력 감지
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -135,11 +138,21 @@ public class InGameMenuController : MonoBehaviour
 
     public void OnExitButtonClicked()
     {
-        if (_isExiting) return;
+        if (_isExiting)
+        {
+            return;
+        }
         _isExiting = true;
 
-        if (_resumeButton != null) _resumeButton.interactable = false;
-        if (_exitButton != null) _exitButton.interactable = false;
+        if (_resumeButton != null)
+        {
+            _resumeButton.interactable = false;
+        }
+
+        if (_exitButton != null)
+        {
+            _exitButton.interactable = false;
+        }
 
         StartCoroutine(ExitRoutine());
     }
@@ -194,7 +207,10 @@ public class InGameMenuController : MonoBehaviour
     /// </summary>
     private void HandleClientDisconnect(ulong clientId)
     {
-        if (NetworkManager.Singleton == null) return;
+        if (NetworkManager.Singleton == null)
+        {
+            return;
+        }
 
         // 로컬 클라이언트의 연결이 끊긴 경우
         if (clientId == NetworkManager.Singleton.LocalClientId || !NetworkManager.Singleton.IsConnectedClient)

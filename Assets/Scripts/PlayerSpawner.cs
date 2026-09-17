@@ -32,7 +32,10 @@ public class PlayerSpawner : MonoBehaviour
 
     private void SubscribeToEvents()
     {
-        if (_isSubscribed) return;
+        if (_isSubscribed)
+        {
+            return;
+        }
 
         if (NetworkManager.Singleton != null)
         {
@@ -57,7 +60,10 @@ public class PlayerSpawner : MonoBehaviour
 
     private void UnsubscribeFromEvents()
     {
-        if (!_isSubscribed) return;
+        if (!_isSubscribed)
+        {
+            return;
+        }
 
         if (NetworkManager.Singleton != null)
         {

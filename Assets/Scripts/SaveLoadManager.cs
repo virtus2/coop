@@ -90,7 +90,10 @@ public class SaveLoadManager : MonoBehaviour
 
     private void SubscribeNetworkEvents()
     {
-        if (_isSubscribed || NetworkManager.Singleton == null) return;
+        if (_isSubscribed || NetworkManager.Singleton == null)
+        {
+            return;
+        }
 
         NetworkManager.Singleton.OnServerStarted += HandleServerStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
@@ -105,7 +108,10 @@ public class SaveLoadManager : MonoBehaviour
 
     private void UnsubscribeNetworkEvents()
     {
-        if (!_isSubscribed || NetworkManager.Singleton == null) return;
+        if (!_isSubscribed || NetworkManager.Singleton == null)
+        {
+            return;
+        }
 
         NetworkManager.Singleton.OnServerStarted -= HandleServerStarted;
         NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
@@ -149,7 +155,10 @@ public class SaveLoadManager : MonoBehaviour
 
     private void HandleClientConnected(ulong clientId)
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
 
         string pId = GetPlayerId(clientId);
         _clientIdToPlayerId[clientId] = pId;
@@ -166,7 +175,10 @@ public class SaveLoadManager : MonoBehaviour
 
     private void HandleClientDisconnect(ulong clientId)
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
 
         // 호스트 본인이 셧다운될 때(서버 종료)는 일괄 저장 로직에서 처리하므로 개별 핸들러는 제외
         if (clientId == NetworkManager.Singleton.LocalClientId)
@@ -255,7 +267,10 @@ public class SaveLoadManager : MonoBehaviour
 
     public void ApplySaveDataToPlayer(ulong clientId, NetworkObject playerObj)
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer || playerObj == null) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer || playerObj == null)
+        {
+            return;
+        }
 
         if (!_isLoaded)
         {
@@ -269,12 +284,18 @@ public class SaveLoadManager : MonoBehaviour
         {
             // 서버 측 CharacterController 일시 비활성화 후 위치 및 회전 설정
             var cc = playerObj.GetComponent<CharacterController>();
-            if (cc != null) cc.enabled = false;
+            if (cc != null)
+            {
+                cc.enabled = false;
+            }
 
             playerObj.transform.position = data.position;
             playerObj.transform.rotation = Quaternion.Euler(data.rotation);
 
-            if (cc != null) cc.enabled = true;
+            if (cc != null)
+            {
+                cc.enabled = true;
+            }
 
             _lastKnownTransforms[clientId] = new PlayerTransformData
             {
@@ -320,7 +341,10 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     public async Task SavePlayerStateAsync(ulong clientId, Vector3 position, Vector3 rotation, float cameraPitch)
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
 
         string pId = GetPlayerId(clientId);
         var existing = _currentSaveData.players.Find(p => p.playerId == pId);
@@ -362,7 +386,10 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     public async Task SaveGameAsync()
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
 
         foreach (var kvp in NetworkManager.Singleton.ConnectedClients)
         {

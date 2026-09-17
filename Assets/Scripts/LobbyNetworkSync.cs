@@ -41,16 +41,28 @@ public class LobbyNetworkSync : NetworkBehaviour
     {
         get
         {
-            if (_players == null || _players.Count == 0) return false;
+            if (_players == null || _players.Count == 0)
+            {
+                return false;
+            }
+
             foreach (var p in _players)
-                if (!p.IsReady) return false;
+            {
+                if (!p.IsReady)
+                {
+                    return false;
+                }
+            }
             return true;
         }
     }
 
     // static 변수는 Domain Reload 비활성화 대응
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatic() => Instance = null;
+    private static void ResetStatic()
+    {
+        Instance = null;
+    }
 
     private void Awake()
     {
@@ -78,7 +90,10 @@ public class LobbyNetworkSync : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (Instance == this) Instance = null;
+        if (Instance == this)
+        {
+            Instance = null;
+        }
 
         if (IsServer)
         {
@@ -90,15 +105,26 @@ public class LobbyNetworkSync : NetworkBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
-        if (IsServer) AddPlayer(clientId);
+        if (IsServer)
+        {
+            AddPlayer(clientId);
+        }
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
-        if (!IsServer) return;
+        if (!IsServer)
+        {
+            return;
+        }
+
         for (int i = 0; i < _players.Count; i++)
         {
-            if (_players[i].ClientId == clientId) { _players.RemoveAt(i); return; }
+            if (_players[i].ClientId == clientId)
+            {
+                _players.RemoveAt(i);
+                return;
+            }
         }
     }
 
@@ -109,7 +135,11 @@ public class LobbyNetworkSync : NetworkBehaviour
 
     private string GetMyName()
     {
-        if (SteamManager.Initialized) return SteamFriends.GetPersonaName();
+        if (SteamManager.Initialized)
+        {
+            return SteamFriends.GetPersonaName();
+        }
+
         return "Player " + NetworkManager.Singleton.LocalClientId;
     }
 
@@ -121,9 +151,13 @@ public class LobbyNetworkSync : NetworkBehaviour
         {
             if (_players[i].ClientId == id)
             {
-                var s = _players[i]; s.PlayerName = name; _players[i] = s; return;
+                var s = _players[i];
+                s.PlayerName = name;
+                _players[i] = s;
+                return;
             }
         }
+
         // 아직 안 들어온 경우 추가
         _players.Add(new LobbyPlayerState { ClientId = id, PlayerName = name, IsReady = false });
     }
@@ -136,7 +170,10 @@ public class LobbyNetworkSync : NetworkBehaviour
         {
             if (_players[i].ClientId == id)
             {
-                var s = _players[i]; s.IsReady = !s.IsReady; _players[i] = s; return;
+                var s = _players[i];
+                s.IsReady = !s.IsReady;
+                _players[i] = s;
+                return;
             }
         }
     }
@@ -145,7 +182,11 @@ public class LobbyNetworkSync : NetworkBehaviour
 
     public void StartGame()
     {
-        if (!IsServer || !AllReady || _isStartingGame) return;
+        if (!IsServer || !AllReady || _isStartingGame)
+        {
+            return;
+        }
+
         _isStartingGame = true;
 
         StartGameTransitionClientRpc();

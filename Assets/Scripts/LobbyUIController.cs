@@ -36,7 +36,9 @@ public class LobbyUIController : MonoBehaviour
             Unity.Netcode.NetworkManager.Singleton.OnClientDisconnectCallback -= OnDisconnected;
         }
         if (_sync != null)
+        {
             _sync.OnLobbyStateChanged -= RefreshUI;
+        }
     }
 
     // 로컬 클라이언트가 연결되었을 때 (Host 포함)
@@ -44,7 +46,10 @@ public class LobbyUIController : MonoBehaviour
     {
         var nm = Unity.Netcode.NetworkManager.Singleton;
         // 내 클라이언트 ID일 때만 패널 표시
-        if (clientId != nm.LocalClientId && !nm.IsHost) return;
+        if (clientId != nm.LocalClientId && !nm.IsHost)
+        {
+            return;
+        }
 
         _lobbyPanel.SetActive(true);
 
@@ -80,14 +85,20 @@ public class LobbyUIController : MonoBehaviour
         if (clientId == nm.LocalClientId)
         {
             _lobbyPanel.SetActive(false);
-            if (_sync != null) _sync.OnLobbyStateChanged -= RefreshUI;
+            if (_sync != null)
+            {
+                _sync.OnLobbyStateChanged -= RefreshUI;
+            }
             _sync = null;
         }
     }
 
     private void RefreshUI()
     {
-        if (_sync == null) return;
+        if (_sync == null)
+        {
+            return;
+        }
 
         bool isServer = Unity.Netcode.NetworkManager.Singleton.IsServer;
 
@@ -113,11 +124,17 @@ public class LobbyUIController : MonoBehaviour
 
     private void OnReadyClicked()
     {
-        if (_sync != null) _sync.ToggleReadyServerRpc();
+        if (_sync != null)
+        {
+            _sync.ToggleReadyServerRpc();
+        }
     }
 
     private void OnStartClicked()
     {
-        if (_sync != null) _sync.StartGame();
+        if (_sync != null)
+        {
+            _sync.StartGame();
+        }
     }
 }
