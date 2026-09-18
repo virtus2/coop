@@ -9,7 +9,6 @@ using UnityEngine.SceneManagement;
 public class NetworkBootstrap : MonoBehaviour
 {
     private NetworkManager _networkManager;
-    private string _lobbyIdInput = "";
 
     private void Awake()
     {
@@ -70,105 +69,128 @@ public class NetworkBootstrap : MonoBehaviour
 #endif
     }
 
-    private void OnGUI()
+    /// <summary>
+    /// 로비 만들기 (Host 시작)
+    /// </summary>
+    public void HostLobby()
     {
-        // LobbyScene이나 GameScene에서는 호스트/클라이언트 연결 버튼 숨김
-        string activeSceneName = SceneManager.GetActiveScene().name;
-        if (activeSceneName == "LobbyScene" || activeSceneName == "GameScene")
-        {
-            return;
-        }
-
-        GUILayout.BeginArea(new Rect(10, 10, 320, 350));
-        
         if (_networkManager == null)
         {
-            GUILayout.Label("NetworkManager is not ready or missing.");
-            GUILayout.EndArea();
+            _networkManager = GetComponent<NetworkManager>();
+        }
+
+        if (_networkManager == null)
+        {
+            Debug.LogError("[NetworkBootstrap] NetworkManager is missing.");
             return;
         }
 
-        if (!_networkManager.IsClient && !_networkManager.IsServer)
+        SetupTransport();
+
+#if UNITY_EDITOR
+        if (_networkManager.StartHost())
         {
-            if (GUILayout.Button("Start Host", GUILayout.Height(40)))
-            {
-                SetupTransport();
-#if UNITY_EDITOR
-                if (_networkManager.StartHost())
-                {
-                    _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
-                }
-#else
-                if (SteamLobbyManager.Instance != null)
-                {
-                    SteamLobbyManager.Instance.HostLobby();
-                }
-                else
-                {
-                    var lobbyManager = GetComponent<SteamLobbyManager>();
-                    if (lobbyManager != null) 
-                    {
-                        lobbyManager.HostLobby();
-                    } 
-                    else if (_networkManager.StartHost())
-                    {
-                        _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
-                    }
-                }
-#endif
-            }
-
-            GUILayout.Space(15);
-
-#if UNITY_EDITOR
-            if (GUILayout.Button("Start Client (Local Only)", GUILayout.Height(40)))
-            {
-                SetupTransport();
-                _networkManager.StartClient();
-            }
-
-            GUILayout.Space(10);
-            GUILayout.Label("Join by Steam Lobby ID (Editor):");
-            _lobbyIdInput = GUILayout.TextField(_lobbyIdInput, GUILayout.Height(25));
-            if (GUILayout.Button("Join Lobby", GUILayout.Height(30)))
-            {
-                if (SteamLobbyManager.Instance != null)
-                {
-                    SteamLobbyManager.Instance.JoinLobby(_lobbyIdInput);
-                }
-            }
-#else
-            GUILayout.Label("Steam Lobby ID:");
-            _lobbyIdInput = GUILayout.TextField(_lobbyIdInput, GUILayout.Height(30));
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Paste", GUILayout.Height(35), GUILayout.Width(70)))
-            {
-                _lobbyIdInput = GUIUtility.systemCopyBuffer;
-            }
-            if (GUILayout.Button("Join Lobby", GUILayout.Height(35)))
-            {
-                if (SteamLobbyManager.Instance != null)
-                {
-                    SteamLobbyManager.Instance.JoinLobby(_lobbyIdInput);
-                }
-                else
-                {
-                    Debug.LogWarning("[NetworkBootstrap] SteamLobbyManager.Instance is null.");
-                }
-            }
-            GUILayout.EndHorizontal();
-#endif
+            _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
         }
         else
         {
-            GUILayout.Label($"Mode: {(_networkManager.IsHost ? "Host" : "Client")}");
-            if (GUILayout.Button("Disconnect", GUILayout.Height(30)))
+            Debug.LogError("[NetworkBootstrap] Failed to start host in Editor.");
+        }
+#else
+        if (SteamLobbyManager.Instance != null)
+        {
+            SteamLobbyManager.Instance.HostLobby();
+        }
+        else
+        {
+            var lobbyManager = GetComponent<SteamLobbyManager>();
+            if (lobbyManager != null)
             {
-                _networkManager.Shutdown();
+                lobbyManager.HostLobby();
+            }
+            else if (_networkManager.StartHost())
+            {
+                _networkManager.SceneManager.LoadScene("LobbyScene", LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.LogError("[NetworkBootstrap] Failed to start host in Build mode.");
             }
         }
+#endif
+    }
 
-        GUILayout.EndArea();
+    /// <summary>
+    /// 로비 번호(Lobby ID)를 통해 로비 참가
+    /// </summary>
+    public void JoinLobby(string lobbyId)
+    {
+        if (_networkManager == null)
+        {
+            _networkManager = GetComponent<NetworkManager>();
+        }
+
+        if (_networkManager == null)
+        {
+            Debug.LogError("[NetworkBootstrap] NetworkManager is missing.");
+            return;
+        }
+
+        SetupTransport();
+
+#if UNITY_EDITOR
+        if (string.IsNullOrWhiteSpace(lobbyId))
+        {
+            // 에디터에서 번호가 비어있으면 로컬 클라이언트로 바로 접속
+            Debug.Log("[NetworkBootstrap] Editor mode with empty lobby ID: starting local client.");
+            _networkManager.StartClient();
+        }
+        else
+        {
+            if (SteamLobbyManager.Instance != null)
+            {
+                SteamLobbyManager.Instance.JoinLobby(lobbyId.Trim());
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkBootstrap] SteamLobbyManager is null. Starting local client fallback.");
+                _networkManager.StartClient();
+            }
+        }
+#else
+        if (string.IsNullOrWhiteSpace(lobbyId))
+        {
+            Debug.LogWarning("[NetworkBootstrap] Cannot join lobby: Lobby ID is empty.");
+            return;
+        }
+
+        if (SteamLobbyManager.Instance != null)
+        {
+            SteamLobbyManager.Instance.JoinLobby(lobbyId.Trim());
+        }
+        else
+        {
+            var lobbyManager = GetComponent<SteamLobbyManager>();
+            if (lobbyManager != null)
+            {
+                lobbyManager.JoinLobby(lobbyId.Trim());
+            }
+            else
+            {
+                Debug.LogError("[NetworkBootstrap] SteamLobbyManager is missing in Build mode.");
+            }
+        }
+#endif
+    }
+
+    /// <summary>
+    /// 네트워크 세션 연결 해제
+    /// </summary>
+    public void Disconnect()
+    {
+        if (_networkManager != null && (_networkManager.IsClient || _networkManager.IsServer))
+        {
+            _networkManager.Shutdown();
+        }
     }
 }

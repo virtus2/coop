@@ -53,6 +53,11 @@ public class SteamManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
 
+#if UNITY_EDITOR
+        Debug.Log("[Steamworks.NET] Steam API is disabled in the Editor (as per project rules).");
+        return;
+#endif
+
         if (!_everInitialized)
         {
             // This is almost always an error.

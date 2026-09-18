@@ -17,8 +17,10 @@ public class InGameMenuController : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private GameObject _menuPanel;
     [SerializeField] private Button _resumeButton;
+    [SerializeField] private Button _optionButton;
     [SerializeField] private Button _exitButton;
     [SerializeField] private Text _statusText;
+    [SerializeField] private OptionWindowUI _optionWindow;
 
     private bool _isMenuOpen = false;
     private bool _isExiting = false;
@@ -41,10 +43,27 @@ public class InGameMenuController : MonoBehaviour
             _menuPanel.SetActive(false);
         }
 
+        if (_optionWindow != null && _optionWindow.IsOpen)
+        {
+            _optionWindow.Close();
+        }
+
         if (_resumeButton != null)
         {
             _resumeButton.onClick.RemoveAllListeners();
             _resumeButton.onClick.AddListener(ResumeGame);
+        }
+
+        if (_optionButton != null)
+        {
+            _optionButton.onClick.RemoveAllListeners();
+            _optionButton.onClick.AddListener(OpenOptionWindow);
+        }
+
+        if (_optionWindow != null)
+        {
+            _optionWindow.OnClosed -= HandleOptionWindowClosed;
+            _optionWindow.OnClosed += HandleOptionWindowClosed;
         }
 
         if (_exitButton != null)
@@ -66,6 +85,11 @@ public class InGameMenuController : MonoBehaviour
             Instance = null;
         }
 
+        if (_optionWindow != null)
+        {
+            _optionWindow.OnClosed -= HandleOptionWindowClosed;
+        }
+
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
@@ -82,7 +106,15 @@ public class InGameMenuController : MonoBehaviour
         // Unity New Input System을 통한 ESC 키 입력 감지
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            ToggleMenu();
+            // 옵션창이 열려있다면 옵션창을 닫고 메인 일시정지 메뉴로 복귀
+            if (_optionWindow != null && _optionWindow.IsOpen)
+            {
+                _optionWindow.Close();
+            }
+            else
+            {
+                ToggleMenu();
+            }
         }
     }
 
@@ -101,6 +133,12 @@ public class InGameMenuController : MonoBehaviour
     public void OpenMenu()
     {
         _isMenuOpen = true;
+
+        if (_optionWindow != null && _optionWindow.IsOpen)
+        {
+            _optionWindow.Close();
+        }
+
         if (_menuPanel != null)
         {
             _menuPanel.SetActive(true);
@@ -120,6 +158,12 @@ public class InGameMenuController : MonoBehaviour
     public void ResumeGame()
     {
         _isMenuOpen = false;
+
+        if (_optionWindow != null && _optionWindow.IsOpen)
+        {
+            _optionWindow.Close();
+        }
+
         if (_menuPanel != null)
         {
             _menuPanel.SetActive(false);
@@ -133,6 +177,33 @@ public class InGameMenuController : MonoBehaviour
         if (PlayerController.LocalInstance != null)
         {
             PlayerController.LocalInstance.SetInputEnabled(true);
+        }
+    }
+
+    public void OpenOptionWindow()
+    {
+        if (_menuPanel != null)
+        {
+            _menuPanel.SetActive(false);
+        }
+
+        if (_optionWindow != null)
+        {
+            _optionWindow.OnClosed -= HandleOptionWindowClosed;
+            _optionWindow.OnClosed += HandleOptionWindowClosed;
+            _optionWindow.Open();
+        }
+    }
+
+    private void HandleOptionWindowClosed()
+    {
+        // 일시정지 메뉴 상태에서 옵션창이 닫히면 메인 패널 복원
+        if (_isMenuOpen && !_isExiting)
+        {
+            if (_menuPanel != null)
+            {
+                _menuPanel.SetActive(true);
+            }
         }
     }
 

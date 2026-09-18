@@ -331,6 +331,10 @@ GameObject:
   - component: {fileID: 2200000000000000001}
   - component: {fileID: 2200000000000000002}
   - component: {fileID: 215129876427366526}
+  - component: {fileID: 2362549427457962819}
+  - component: {fileID: 2200000000000000003}
+  - component: {fileID: 1563815384335395752}
+  - component: {fileID: 1493050835772267033}
   m_Layer: 0
   m_Name: PlayerPrefab
   m_TagString: Untagged
@@ -449,6 +453,8 @@ MonoBehaviour:
   _cameraTarget: {fileID: 3336399786481951659}
   _firstPersonCamera: {fileID: 3285035400602289599}
   _headTransform: {fileID: 5946054160253707829}
+  _headTopClamp: 30
+  _headBottomClamp: -40
   _bodyRenderer: {fileID: 100637185518681515}
   _moveActionReference: {fileID: 0}
   _lookActionReference: {fileID: 0}
@@ -478,6 +484,131 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2362549427457962819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2634f720ddd6119408c20658eebca15c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionRange: 4.5
+  _interactionLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _maxDropReach: 5
+  _holdPoint: {fileID: 4096513234399327334}
+  _defaultHoldPointOffset: {x: 0.32, y: -0.25, z: 0.65}
+  _interactActionReference: {fileID: 0}
+  _attackActionReference: {fileID: 0}
+  _inputActionsAsset: {fileID: 0}
+  _holdThreshold: 0.25
+--- !u!114 &2200000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56db884ec39e3f54b9ec44d7cc2cf891, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterFootsteps
+  _defaultFootstepClips: []
+  _surfaceFootsteps: []
+  _volume: 0.8
+  _minPitch: 0.9
+  _maxPitch: 1.1
+  _spatialBlend: 1
+  _minDistance: 1
+  _maxDistance: 30
+  _isLocalPlayer2D: 1
+  _useGroundRaycast: 1
+  _groundCheckOffset: {x: 0, y: 0.5, z: 0}
+  _groundCheckDistance: 1.5
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _minStepInterval: 0.12
+--- !u!95 &1563815384335395752
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1493050835772267033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a25e5fc790714384b9e1f9f1bb7a7f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClientNetworkAnimator
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkAnimatorExpanded: 0
+  AuthorityMode: 0
+  m_Animator: {fileID: 1563815384335395752}
+  TransitionStateInfoList: []
+  AnimatorParameterEntries:
+    ParameterEntries: []
+  AnimatorParametersExpanded: 0
+--- !u!1 &4416810848816386381
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4096513234399327334}
+  m_Layer: 0
+  m_Name: HoldPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4096513234399327334
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4416810848816386381}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.32, y: -0.25, z: 0.65}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3336399786481951659}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5177370397094590567
 GameObject:
   m_ObjectHideFlags: 0
@@ -855,5 +986,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6014250300369364598}
+  - {fileID: 4096513234399327334}
   m_Father: {fileID: 8443737193162296997}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

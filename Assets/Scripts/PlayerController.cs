@@ -23,7 +23,13 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float _bottomClamp = -80f;
     [SerializeField] private Transform _cameraTarget;
     [SerializeField] private CinemachineCamera _firstPersonCamera;
+
+    [Header("Head Settings")]
     [SerializeField] private Transform _headTransform;
+    [Tooltip("머리가 아래를 바라볼 때의 각도 상한선 (Pitch 최대값, 바닥에 눈이 꽂히지 않도록 제한. 기본값: 30도)")]
+    [SerializeField] private float _headTopClamp = 30f;
+    [Tooltip("머리가 위를 바라볼 때의 각도 하한선 (Pitch 최소값. 기본값: -40도)")]
+    [SerializeField] private float _headBottomClamp = -40f;
     [SerializeField] private Renderer _bodyRenderer;
 
     [Header("Input Action References")]
@@ -50,6 +56,27 @@ public class PlayerController : NetworkBehaviour
     );
 
     public float CameraPitch => IsOwner ? _cameraPitch : _networkCameraPitch.Value;
+    public float HeadTopClamp
+    {
+        get => _headTopClamp;
+        set => _headTopClamp = value;
+    }
+
+    public float HeadBottomClamp
+    {
+        get => _headBottomClamp;
+        set => _headBottomClamp = value;
+    }
+
+    /// <summary>
+    /// 머리 회전 Pitch 각도를 상한선(_headTopClamp)과 하한선(_headBottomClamp) 사이로 제한합니다.
+    /// </summary>
+    private float GetClampedHeadPitch(float pitch)
+    {
+        float min = Mathf.Min(_headBottomClamp, _headTopClamp);
+        float max = Mathf.Max(_headBottomClamp, _headTopClamp);
+        return Mathf.Clamp(pitch, min, max);
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatic()
@@ -61,6 +88,12 @@ public class PlayerController : NetworkBehaviour
     {
         _characterController = GetComponent<CharacterController>();
         _clientNetworkTransform = GetComponent<ClientNetworkTransform>();
+
+        // 머리 위 이름표(PlayerNamePlate) 컴포넌트 자동 보장
+        if (GetComponent<PlayerNamePlate>() == null)
+        {
+            gameObject.AddComponent<PlayerNamePlate>();
+        }
         if (_characterController == null)
         {
             _characterController = gameObject.AddComponent<CharacterController>();
@@ -114,6 +147,32 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    private void Start()
+    {
+        // NetworkManager가 없는 오프라인 / 단독 씬 테스트 환경 지원
+        if (!IsSpawned)
+        {
+            LocalInstance = this;
+            _isInputEnabled = true;
+
+            if (_firstPersonCamera != null)
+            {
+                _firstPersonCamera.gameObject.SetActive(true);
+                _firstPersonCamera.Priority.Value = 20;
+            }
+
+            SetCharacterShadowCastingMode(true);
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            _mouseSensitivity = SettingsManager.MouseSensitivity;
+            SettingsManager.OnMouseSensitivityChanged += HandleMouseSensitivityChanged;
+
+            InitializeInput();
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
@@ -135,6 +194,10 @@ public class PlayerController : NetworkBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
+            // 환경 설정에서 마우스 감도 로드 및 이벤트 구독
+            _mouseSensitivity = SettingsManager.MouseSensitivity;
+            SettingsManager.OnMouseSensitivityChanged += HandleMouseSensitivityChanged;
+
             InitializeInput();
         }
         else
@@ -151,7 +214,7 @@ public class PlayerController : NetworkBehaviour
             // 원격 플레이어 초기 머리 각도 적용
             if (_headTransform != null)
             {
-                _headTransform.localRotation = Quaternion.Euler(_networkCameraPitch.Value, 0f, 0f);
+                _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_networkCameraPitch.Value), 0f, 0f);
             }
         }
     }
@@ -180,6 +243,8 @@ public class PlayerController : NetworkBehaviour
     {
         if (IsOwner)
         {
+            SettingsManager.OnMouseSensitivityChanged -= HandleMouseSensitivityChanged;
+
             if (LocalInstance == this)
             {
                 LocalInstance = null;
@@ -192,6 +257,31 @@ public class PlayerController : NetworkBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
+    }
+
+    public override void OnDestroy()
+    {
+        if (IsOwner || !IsSpawned)
+        {
+            SettingsManager.OnMouseSensitivityChanged -= HandleMouseSensitivityChanged;
+
+            if (LocalInstance == this)
+            {
+                LocalInstance = null;
+            }
+        }
+
+        base.OnDestroy();
+    }
+
+    public void SetMouseSensitivity(float sensitivity)
+    {
+        _mouseSensitivity = sensitivity;
+    }
+
+    private void HandleMouseSensitivityChanged(float newSensitivity)
+    {
+        _mouseSensitivity = newSensitivity;
     }
 
     private void InitializeInput()
@@ -251,13 +341,13 @@ public class PlayerController : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsOwner)
+        if (IsSpawned && !IsOwner)
         {
             UpdateRemoteHead();
             return;
         }
 
-        if (_characterController == null || !_isInputEnabled)
+        if (_characterController == null || !_characterController.enabled || !_isInputEnabled)
         {
             return;
         }
@@ -273,7 +363,7 @@ public class PlayerController : NetworkBehaviour
     {
         if (_headTransform != null)
         {
-            Quaternion targetRotation = Quaternion.Euler(_networkCameraPitch.Value, 0f, 0f);
+            Quaternion targetRotation = Quaternion.Euler(GetClampedHeadPitch(_networkCameraPitch.Value), 0f, 0f);
             _headTransform.localRotation = Quaternion.Slerp(_headTransform.localRotation, targetRotation, Time.deltaTime * 20f);
         }
     }
@@ -300,7 +390,7 @@ public class PlayerController : NetworkBehaviour
 
         if (_headTransform != null)
         {
-            _headTransform.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
         }
 
         if (IsSpawned && IsOwner && Mathf.Abs(_networkCameraPitch.Value - _cameraPitch) > 0.05f)
@@ -358,7 +448,7 @@ public class PlayerController : NetworkBehaviour
 
         if (_headTransform != null)
         {
-            _headTransform.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
         }
 
         if (IsSpawned && IsOwner)
