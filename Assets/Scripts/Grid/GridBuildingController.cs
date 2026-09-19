@@ -66,6 +66,7 @@ public class GridBuildingController : MonoBehaviour
         }
 
         UpdateRaycastAndGridCoord();
+        HandlePrefabSelectionInput();
         HandleRotationInput();
         HandlePlacementInput();
         HandleDemolishInput();
@@ -73,6 +74,7 @@ public class GridBuildingController : MonoBehaviour
 
     /// <summary>
     /// 마우스 포인터 레이캐스트를 수행하여 현재 마우스가 가리키는 그리드 좌표 및 설치 가능 여부를 갱신합니다.
+    /// 마우스 커서가 잠겨있는(1인칭 모드) 경우 화면 중앙을, 그렇지 않으면 마우스 커서 위치를 기준으로 레이를 발사합니다.
     /// </summary>
     private void UpdateRaycastAndGridCoord()
     {
@@ -82,13 +84,21 @@ public class GridBuildingController : MonoBehaviour
             return;
         }
 
-        Vector2 mousePosition = Vector2.zero;
-        if (Mouse.current != null)
+        Ray ray;
+        if (Cursor.lockState == CursorLockMode.Locked)
         {
-            mousePosition = Mouse.current.position.ReadValue();
+            ray = _targetCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        }
+        else
+        {
+            Vector2 mousePosition = Vector2.zero;
+            if (Mouse.current != null)
+            {
+                mousePosition = Mouse.current.position.ReadValue();
+            }
+            ray = _targetCamera.ScreenPointToRay(mousePosition);
         }
 
-        Ray ray = _targetCamera.ScreenPointToRay(mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, _maxRaycastDistance, _groundLayerMask))
         {
             _hasValidGroundHit = true;
@@ -128,6 +138,32 @@ public class GridBuildingController : MonoBehaviour
             {
                 _hasValidGroundHit = false;
             }
+        }
+    }
+
+    /// <summary>
+    /// 숫자 키(1~9)를 눌러 배치할 프리팹을 빠르게 선택합니다.
+    /// </summary>
+    private void HandlePrefabSelectionInput()
+    {
+        if (Keyboard.current == null || _placeablePrefabs == null || _placeablePrefabs.Count == 0)
+        {
+            return;
+        }
+
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) SelectPrefabIndex(0);
+        else if (Keyboard.current.digit2Key.wasPressedThisFrame) SelectPrefabIndex(1);
+        else if (Keyboard.current.digit3Key.wasPressedThisFrame) SelectPrefabIndex(2);
+        else if (Keyboard.current.digit4Key.wasPressedThisFrame) SelectPrefabIndex(3);
+        else if (Keyboard.current.digit5Key.wasPressedThisFrame) SelectPrefabIndex(4);
+    }
+
+    public void SelectPrefabIndex(int index)
+    {
+        if (_placeablePrefabs != null && index >= 0 && index < _placeablePrefabs.Count)
+        {
+            _selectedPrefabIndex = index;
+            Debug.Log($"[GridBuildingController] 선택된 오브젝트: {_placeablePrefabs[index].DisplayName} (슬롯 {index + 1})");
         }
     }
 

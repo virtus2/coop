@@ -267,6 +267,85 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 33748855}
   m_CullTransparentMesh: 1
+--- !u!1 &73783697
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 73783700}
+  - component: {fileID: 73783699}
+  - component: {fileID: 73783698}
+  m_Layer: 0
+  m_Name: GridSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &73783698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73783697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0337a48e484b81468f24fe9cc174be3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridBuildingController
+  _placeablePrefabs:
+  - {fileID: 2416612913130222581, guid: f0b79ac4e5eddcf42846fc430dce3905, type: 3}
+  - {fileID: 8292229237795344197, guid: dc039f92e05180f4aaa8d9c8ca2b980d, type: 3}
+  - {fileID: 7234709981192739976, guid: 99c98254d46bed24685d7dbe9f665c40, type: 3}
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _maxRaycastDistance: 100
+  _canBuildColor: {r: 0, g: 1, b: 0, a: 0.4}
+  _cannotBuildColor: {r: 1, g: 0, b: 0, a: 0.4}
+  _isBuildModeActive: 1
+--- !u!114 &73783699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73783697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9a24ef4b2d7f2b40b776441b482832a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldGridManager
+  _gridWidth: 30
+  _gridLength: 30
+  _cellSize: 1
+  _gridOriginOffset: {x: -15, y: 0, z: -15}
+  _showGridDebug: 1
+  _showWhenSelectedOnly: 0
+  _showOccupiedFill: 1
+  _gridLineColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.35}
+  _gridBorderColor: {r: 0.2, g: 1, b: 0.4, a: 0.9}
+  _occupiedCellColor: {r: 1, g: 0.2, b: 0.2, a: 0.5}
+  _emptyCellColor: {r: 0.2, g: 0.8, b: 1, a: 0.05}
+--- !u!4 &73783700
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73783697}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &76957057
 GameObject:
   m_ObjectHideFlags: 0
@@ -3490,3 +3569,4 @@ SceneRoots:
   - {fileID: 20006822}
   - {fileID: 1295143347}
   - {fileID: 1323323302}
+  - {fileID: 73783700}
