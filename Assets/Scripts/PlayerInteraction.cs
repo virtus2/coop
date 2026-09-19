@@ -508,6 +508,13 @@ public class PlayerInteraction : NetworkBehaviour
             return;
         }
 
+        var placeableItem = _heldItem.GetComponent<PlaceableItem>();
+        if (placeableItem != null)
+        {
+            InteractionUI.Instance.ShowHeldHint($"[우클릭] {placeableItem.BuildingPrefab?.DisplayName ?? "블록"} 설치 | [R] 회전 | [G] 내려놓기");
+            return;
+        }
+
         if (_fireableItem != null && _usableItem != null)
         {
             InteractionUI.Instance.ShowHeldHint("[좌클릭] 발사 | [좌클릭 홀드] 사용 | [G] 내려놓기");
@@ -537,6 +544,13 @@ public class PlayerInteraction : NetworkBehaviour
         ClearCurrentTarget();
         ResetItemActionState();
         UpdateHeldHintUI();
+
+        // 설치 가능한 블록 아이템인 경우 그리드 건설 모드 시작
+        var placeableItem = item != null ? item.GetComponent<PlaceableItem>() : null;
+        if (placeableItem != null && GridBuildingController.Instance != null)
+        {
+            GridBuildingController.Instance.StartBuilding(placeableItem);
+        }
     }
 
     /// <summary>
@@ -550,6 +564,12 @@ public class PlayerInteraction : NetworkBehaviour
             _heldItem = null;
             _fireableItem = null;
             _usableItem = null;
+
+            // 건설 모드 종료
+            if (GridBuildingController.Instance != null)
+            {
+                GridBuildingController.Instance.StopBuilding();
+            }
         }
 
         if (InteractionUI.Instance != null)

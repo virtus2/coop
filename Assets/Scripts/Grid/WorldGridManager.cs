@@ -24,6 +24,19 @@ public class WorldGridManager : MonoBehaviour
     [Tooltip("그리드의 기준점(Origin) 위치 오프셋")]
     [SerializeField] private Vector3 _gridOriginOffset = Vector3.zero;
 
+    [Header("Character Collision Settings")]
+    [Tooltip("설치를 방해하는 캐릭터 및 생명체 레이어 마스크 (기본값: 모든 레이어 대상 검사 후 캐릭터 컴포넌트 유무 판정)")]
+    [SerializeField] private LayerMask _characterLayerMask = ~0;
+
+    [Tooltip("캐릭터 감지를 위한 검사 높이 (미터 단위)")]
+    [SerializeField] private float _characterCheckHeight = 2.0f;
+
+    [Tooltip("지면 콜라이더 오인 감지를 방지하기 위한 바닥 오프셋 (미터 단위)")]
+    [SerializeField] private float _characterCheckBottomOffset = 0.1f;
+
+    [Tooltip("그리드 경계선 살짝 접촉 시의 오차를 완화하기 위한 스킨 마진")]
+    [SerializeField] private float _collisionSkinWidth = 0.05f;
+
     [Header("Debug Gizmo Visualization")]
     [Tooltip("씬 및 게임 뷰에서 그리드 기즈모 표시 여부")]
     [SerializeField] private bool _showGridDebug = true;
@@ -177,11 +190,13 @@ public class WorldGridManager : MonoBehaviour
         return _gridCells[coord.x, coord.y];
     }
 
+    private readonly Collider[] _characterOverlapBuffer = new Collider[16];
+
     /// <summary>
     /// 오브젝트를 지정된 좌표 및 각도에 설치할 수 있는지 검사합니다.
-    /// 모든 점유 대상 셀이 그리드 내부여야 하며, 이미 점유된 셀이 없어야 합니다.
+    /// 모든 점유 대상 셀이 그리드 내부여야 하며, 이미 점유된 셀이 없고, 설치 영역 내에 캐릭터가 없어야 합니다.
     /// </summary>
-    public bool CanPlaceObject(PlaceableObject placeable, Vector2Int originCoord, int rotationAngle = 0)
+    public bool CanPlaceObject(PlaceableObject placeable, Vector2Int originCoord, int rotationAngle = 0, bool checkCharacters = true)
     {
         if (placeable == null)
         {
@@ -207,7 +222,75 @@ public class WorldGridManager : MonoBehaviour
             }
         }
 
+        // 3. 해당 영역에 어떤 캐릭터라도 서 있는지 물리 쿼리 체크
+        if (checkCharacters && IsCharacterInPlacementArea(placeable, originCoord, rotationAngle))
+        {
+            return false;
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// 지정된 설치 좌표 및 회전 영역 내에 어떤 캐릭터라도 서 있는지 물리 쿼리(Physics.OverlapBoxNonAlloc)로 검사합니다.
+    /// 플레이어, 몬스터, NPC 등의 충돌체가 있을 경우 true를 반환합니다.
+    /// </summary>
+    public bool IsCharacterInPlacementArea(PlaceableObject placeable, Vector2Int originCoord, int rotationAngle = 0)
+    {
+        if (placeable == null)
+        {
+            return false;
+        }
+
+        Vector2Int effectiveSize = placeable.GetRotatedSize(rotationAngle);
+
+        float halfX = Mathf.Max(0.01f, (effectiveSize.x * _cellSize * 0.5f) - _collisionSkinWidth);
+        float halfZ = Mathf.Max(0.01f, (effectiveSize.y * _cellSize * 0.5f) - _collisionSkinWidth);
+        float actualHeight = Mathf.Max(0.1f, _characterCheckHeight - _characterCheckBottomOffset);
+        float halfY = actualHeight * 0.5f;
+
+        Vector3 center = GridOrigin + new Vector3(
+            (originCoord.x + effectiveSize.x * 0.5f) * _cellSize,
+            _characterCheckBottomOffset + halfY,
+            (originCoord.y + effectiveSize.y * 0.5f) * _cellSize
+        );
+
+        Vector3 halfExtents = new Vector3(halfX, halfY, halfZ);
+
+        int hitCount = Physics.OverlapBoxNonAlloc(
+            center,
+            halfExtents,
+            _characterOverlapBuffer,
+            Quaternion.identity,
+            _characterLayerMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = _characterOverlapBuffer[i];
+            if (col == null)
+            {
+                continue;
+            }
+
+            // 이미 배치된 PlaceableObject이거나 그 하위 콜라이더인 경우 무시
+            if (col.GetComponentInParent<PlaceableObject>() != null)
+            {
+                continue;
+            }
+
+            // 캐릭터 판별: CharacterController, PlayerController, NonPlayerCharacter 또는 "Player" 태그
+            if (col.GetComponentInParent<CharacterController>() != null ||
+                col.GetComponentInParent<PlayerController>() != null ||
+                col.GetComponentInParent<NonPlayerCharacter>() != null ||
+                col.CompareTag("Player"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
