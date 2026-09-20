@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3435798893ed4a49838467ae91f5398, type: 3}
+  m_Name: PickableBoxItemData
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  _itemId: item_box
+  _itemName: "\uBCF4\uAD00 \uC0C1\uC790"
+  _icon: {fileID: 0}
+  _description: "\uBC14\uB2E5\uC5D0 \uB0B4\uB824\uB193\uAC70\uB098 \uB4E4 \uC218
+    \uC788\uB294 \uC0C1\uC790\uC785\uB2C8\uB2E4."
+  _maxStackSize: 10
+  _holdPrefab: {fileID: 7568627917206836868, guid: 6554b03961f90734c9fae3f9ac741486, type: 3}
+  _worldPrefab: {fileID: 7568627917206836868, guid: 6554b03961f90734c9fae3f9ac741486, type: 3}

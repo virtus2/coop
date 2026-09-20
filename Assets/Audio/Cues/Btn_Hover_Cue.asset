@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73d6621c547a4ff5846ed409229342df, type: 3}
+  m_Name: Btn_Hover_Cue
+  m_EditorClassIdentifier: Coop.Audio::SoundCueAsset
+  _soundCue:
+    _clip: {fileID: 0}
+    _additionalClips: []
+    _useRandomClip: 0
+    _volume: 0.8
+    _useRandomVolume: 0
+    _minVolume: 0.8
+    _maxVolume: 1
+    _useRandomPitch: 1
+    _minPitch: 0.95
+    _maxPitch: 1.05
+    _priority: 10
+    _cooldown: 0.05
+    _is3D: 0
+    _spatialBlend: 1
+    _minDistance: 1
+    _maxDistance: 30

@@ -106,6 +106,13 @@ public class InGameMenuController : MonoBehaviour
         // Unity New Input System을 통한 ESC 키 입력 감지
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
+            // 인벤토리 창이 열려있다면 인벤토리 창을 먼저 닫음
+            if (InventoryUIController.Instance != null && InventoryUIController.Instance.IsOpen)
+            {
+                InventoryUIController.Instance.CloseInventory();
+                return;
+            }
+
             // 옵션창이 열려있다면 옵션창을 닫고 메인 일시정지 메뉴로 복귀
             if (_optionWindow != null && _optionWindow.IsOpen)
             {
