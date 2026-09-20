@@ -6,7 +6,6 @@ using UnityEngine;
 /// PickableItem과 함께 부착되어 동작합니다.
 /// </summary>
 [DisallowMultipleComponent]
-[RequireComponent(typeof(PickableItem))]
 public class PlaceableItem : MonoBehaviour
 {
     [Header("Building Target")]

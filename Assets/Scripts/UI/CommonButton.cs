@@ -95,6 +95,8 @@ namespace Coop.UI
 
         public TextMeshProUGUI Label => _label;
         public LocalizeStringEvent LocalizeEvent => _localizeStringEvent;
+        public bool IsHovered => _isHovered;
+        public bool IsPressed => _isPressed;
 
         public SoundCue ActiveHoverSound => (_hoverSoundAsset != null) ? _hoverSoundAsset.Cue : _hoverSoundInline;
         public SoundCue ActiveClickSound => (_clickSoundAsset != null) ? _clickSoundAsset.Cue : _clickSoundInline;
@@ -463,7 +465,7 @@ namespace Coop.UI
         /// </summary>
         public void SetLocalizedKey(string entryKey)
         {
-            if (_localizeStringEvent != null && !_localizeStringEvent.StringReference.TableReference.IsEmpty)
+            if (_localizeStringEvent != null && _localizeStringEvent.StringReference.TableReference.ReferenceType != UnityEngine.Localization.Tables.TableReference.Type.Empty)
             {
                 _localizeStringEvent.StringReference.TableEntryReference = entryKey;
                 _localizeStringEvent.RefreshString();

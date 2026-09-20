@@ -2,36 +2,60 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// 플레이어가 E키로 상호작용하여 손에 들 수 있고,
-/// 손에 든 상태에서 바닥을 클릭하여 다시 내려놓을 수 있는 상호작용 오브젝트입니다.
-/// 로컬 단독 실행 및 Netcode(NGO) 환경 모두를 지원합니다.
+/// 월드에 스폰되어 물리 시뮬레이션되는 상호작용 아이템 객체입니다.
+/// NetworkTransform 및 NetworkRigidbody를 통해 멀티플레이 환경에서 완벽한 물리 동기화를 지원하며,
+/// 바닥에 닿아 멈추면 Kinematic으로 고정(기법 1)되어 성능을 최적화합니다.
+/// 플레이어가 E키로 상호작용하여 획득하면 인벤토리/손으로 들어가고 월드에서는 즉시 Despawn됩니다.
 /// </summary>
-[RequireComponent(typeof(Rigidbody))]
 public class PickableItem : NetworkBehaviour, IInteractable
 {
     [Header("Interaction Settings")]
     [SerializeField] private string _promptText = "들기";
-    [SerializeField] private Vector3 _holdOffset = Vector3.zero;
-    [SerializeField] private Vector3 _holdRotation = Vector3.zero;
     [SerializeField] private float _dropVerticalOffset = 0.2f;
+
+    [Header("Inventory Settings")]
+    [SerializeField] private ItemData _itemData;
 
     private Rigidbody _rigidbody;
     private Collider[] _colliders;
-    private bool _isHeld;
-    private PlayerInteraction _currentHolder;
+    private bool _isDespawning;
 
-    public bool IsHeld => _isHeld;
     public float DropVerticalOffset => _dropVerticalOffset;
 
-    // 네트워크 동기화용 변수: 들고 있는 플레이어의 NetworkObjectId (없으면 ulong.MaxValue)
-    private readonly NetworkVariable<ulong> _holderNetworkObjectId = new NetworkVariable<ulong>(
-        ulong.MaxValue,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    public ItemData ItemData
+    {
+        get => _itemData;
+        set => _itemData = value;
+    }
+
+    // 물리 안정화 및 수면(Sleep & Freeze) 최적화 변수 (기법 1)
+    private bool _isSettled;
+    private float _stillTimer;
+    private const float SETTLE_THRESHOLD = 0.15f;
+    private const float SETTLE_SPEED_SQR = 0.005f;
+
+    public bool IsSettled => _isSettled;
+
+    // 하위 호환성 빈 메서드 및 프로퍼티 (필요시 호출 방어)
+    public bool IsHeld => false;
+    public void SetThrower(ulong throwerNetId) { }
+    public void IgnoreCollisionWithThrower(GameObject thrower) { }
+    public void RestoreThrowerCollision() { }
 
     private void Awake()
     {
+        // 1. PickableItem 전용 레이어 자동 할당 (Item vs Item 및 Item vs Player 충돌 무시 매트릭스 적용 - 기법 2)
+        int pickableLayer = LayerMask.NameToLayer("PickableItem");
+        if (pickableLayer >= 0)
+        {
+            gameObject.layer = pickableLayer;
+            var children = GetComponentsInChildren<Transform>(true);
+            foreach (var child in children)
+            {
+                child.gameObject.layer = pickableLayer;
+            }
+        }
+
         _rigidbody = GetComponent<Rigidbody>();
         _colliders = GetComponentsInChildren<Collider>();
 
@@ -46,61 +70,38 @@ public class PickableItem : NetworkBehaviour, IInteractable
         }
     }
 
-    public override void OnNetworkSpawn()
+    private void OnEnable()
     {
-        _holderNetworkObjectId.OnValueChanged += HandleHolderChanged;
+        ItemCullingManager.Register(this);
+    }
 
-        if (_holderNetworkObjectId.Value != ulong.MaxValue)
-        {
-            AttachToHolderById(_holderNetworkObjectId.Value);
-        }
+    private void OnDisable()
+    {
+        ItemCullingManager.Unregister(this);
     }
 
     public override void OnNetworkDespawn()
     {
-        _holderNetworkObjectId.OnValueChanged -= HandleHolderChanged;
-    }
-
-    private void HandleHolderChanged(ulong previousValue, ulong newValue)
-    {
-        if (newValue != ulong.MaxValue)
-        {
-            AttachToHolderById(newValue);
-        }
-        else
-        {
-            DetachFromHolder();
-        }
-    }
-
-    private void AttachToHolderById(ulong holderNetId)
-    {
-        if (NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(holderNetId, out NetworkObject holderNetObj))
-        {
-            var interactor = holderNetObj.GetComponent<PlayerInteraction>();
-            if (interactor != null)
-            {
-                InternalPickup(interactor);
-            }
-        }
-    }
-
-    private void DetachFromHolder()
-    {
-        InternalDrop(transform.position, transform.rotation);
+        _isDespawning = true;
+        base.OnNetworkDespawn();
     }
 
     #region IInteractable Implementation
 
     public bool CanInteract(PlayerInteraction interactor)
     {
-        if (_isHeld)
+        if (_isDespawning)
         {
             return false;
         }
 
-        if (interactor != null && interactor.IsHoldingItem)
+        if (interactor == null)
+        {
+            return false;
+        }
+
+        // 이미 바닥에서 주운 미수납 아이템을 손에 쥐고 있다면 추가 줍기 상호작용 비활성화
+        if (interactor.ItemHolder != null && interactor.ItemHolder.IsHoldingWorldItem)
         {
             return false;
         }
@@ -120,136 +121,87 @@ public class PickableItem : NetworkBehaviour, IInteractable
             return;
         }
 
-        Pickup(interactor);
+        // 플레이어에게 아이템 획득 처리 위임
+        interactor.PickupWorldItem(this);
     }
 
     #endregion
 
-    /// <summary>
-    /// 플레이어가 이 물체를 집어 들도록 처리합니다.
-    /// </summary>
-    public void Pickup(PlayerInteraction interactor)
+    private void FixedUpdate()
     {
-        if (_isHeld || interactor == null)
+        // 1. 이미 안착(Kinematic)된 경우 연산 스킵 (기법 1)
+        if (_isSettled || _rigidbody == null || _rigidbody.isKinematic)
         {
             return;
         }
 
-        if (IsSpawned)
+        // 2. 서버 측 물리 수면 판정: IsSleeping이거나 속도가 임계값 이하로 지속될 때
+        if (IsServer || !IsSpawned)
         {
-            // 네트워크 환경: 서버에 들기 요청
-            PickupServerRpc(interactor.NetworkObjectId);
-        }
-        else
-        {
-            // 로컬/싱글플레이 환경
-            InternalPickup(interactor);
-            interactor.OnItemPickedUp(this);
+            bool isStill = _rigidbody.IsSleeping() ||
+                           (_rigidbody.linearVelocity.sqrMagnitude < SETTLE_SPEED_SQR &&
+                            _rigidbody.angularVelocity.sqrMagnitude < SETTLE_SPEED_SQR);
+
+            if (isStill)
+            {
+                _stillTimer += Time.fixedDeltaTime;
+                if (_stillTimer >= SETTLE_THRESHOLD)
+                {
+                    SettlePhysics();
+                }
+            }
+            else
+            {
+                _stillTimer = 0f;
+            }
         }
     }
 
     /// <summary>
-    /// 플레이어가 손에 든 물체를 지정된 위치와 회전으로 내려놓습니다.
+    /// 아이템이 바닥에 안정적으로 안착했을 때 물리를 Kinematic으로 고정하여 PhysX 연산 부하 및 NetworkTransform 전송을 0으로 만듭니다. (기법 1)
     /// </summary>
-    public void Drop(Vector3 targetPosition, Quaternion targetRotation)
+    public void SettlePhysics()
     {
-        if (!_isHeld)
+        if (_isSettled || _rigidbody == null)
         {
             return;
         }
 
-        if (IsSpawned)
-        {
-            // 네트워크 환경: 서버에 내려놓기 요청
-            DropServerRpc(targetPosition, targetRotation);
-        }
-        else
-        {
-            // 로컬/싱글플레이 환경
-            var previousHolder = _currentHolder;
-            InternalDrop(targetPosition, targetRotation);
-            if (previousHolder != null)
-            {
-                previousHolder.OnItemDropped(this);
-            }
-        }
+        _isSettled = true;
+        _stillTimer = 0f;
+        _rigidbody.linearVelocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
+        _rigidbody.isKinematic = true;
     }
 
-    private void LateUpdate()
+    /// <summary>
+    /// 외부 충격이나 폭발 등으로 멈춰있던 아이템을 다시 물리 시뮬레이션 상태로 깨웁니다.
+    /// </summary>
+    public void WakeUpPhysics(Vector3 force = default)
     {
-        if (_isHeld && _currentHolder != null)
-        {
-            Transform holdTarget = _currentHolder.HoldPoint != null ? _currentHolder.HoldPoint : _currentHolder.transform;
-            Vector3 targetPos = holdTarget.TransformPoint(_holdOffset);
-            Quaternion targetRot = holdTarget.rotation * Quaternion.Euler(_holdRotation);
-            transform.SetPositionAndRotation(targetPos, targetRot);
-        }
-    }
+        _isSettled = false;
+        _stillTimer = 0f;
 
-    private void InternalPickup(PlayerInteraction interactor)
-    {
-        _isHeld = true;
-        _currentHolder = interactor;
-
-        if (_rigidbody == null)
+        if (IsServer || !IsSpawned)
         {
-            _rigidbody = GetComponent<Rigidbody>();
-        }
-
-        if (_rigidbody != null)
-        {
-            _rigidbody.isKinematic = true;
-            _rigidbody.linearVelocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
-        }
-
-        if (_colliders == null)
-        {
-            _colliders = GetComponentsInChildren<Collider>();
-        }
-
-        // 충돌체 비활성화 (플레이어 충돌 및 시선 가림 방지)
-        if (_colliders != null)
-        {
-            foreach (var col in _colliders)
+            if (_rigidbody != null)
             {
-                if (col != null)
+                _rigidbody.isKinematic = false;
+                if (force != Vector3.zero)
                 {
-                    col.enabled = false;
+                    _rigidbody.AddForce(force, ForceMode.Impulse);
                 }
             }
         }
-
-        // NetworkObject의 계층(Parenting) 규칙 위반을 방지하기 위해 SetParent 대신
-        // LateUpdate에서 홀더의 HoldPoint 위치/회전을 직접 추종(Follow)합니다.
-        Transform holdTarget = interactor.HoldPoint != null ? interactor.HoldPoint : interactor.transform;
-        Vector3 initialPos = holdTarget.TransformPoint(_holdOffset);
-        Quaternion initialRot = holdTarget.rotation * Quaternion.Euler(_holdRotation);
-        transform.SetPositionAndRotation(initialPos, initialRot);
     }
 
-    private void InternalDrop(Vector3 targetPosition, Quaternion targetRotation)
+    /// <summary>
+    /// 아이템을 스폰 또는 드롭할 때 초기 위치, 회전, 투척 속도를 설정합니다.
+    /// </summary>
+    public void SetInitialDropPhysics(Vector3 initialVelocity)
     {
-        _isHeld = false;
-        transform.position = targetPosition;
-        transform.rotation = targetRotation;
-
-        if (_colliders == null)
-        {
-            _colliders = GetComponentsInChildren<Collider>();
-        }
-
-        // 충돌체 재활성화
-        if (_colliders != null)
-        {
-            foreach (var col in _colliders)
-            {
-                if (col != null)
-                {
-                    col.enabled = true;
-                }
-            }
-        }
+        _isSettled = false;
+        _stillTimer = 0f;
 
         if (_rigidbody == null)
         {
@@ -259,57 +211,18 @@ public class PickableItem : NetworkBehaviour, IInteractable
         if (_rigidbody != null)
         {
             _rigidbody.isKinematic = false;
-            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.linearVelocity = initialVelocity;
             _rigidbody.angularVelocity = Vector3.zero;
         }
-
-        _currentHolder = null;
     }
 
-    #region ServerRpc
+    // 하위 호환성 지원용
+    public void InternalDrop(Vector3 targetPosition, Quaternion targetRotation) => Drop(targetPosition, targetRotation);
 
-    [ServerRpc(RequireOwnership = false)]
-    private void PickupServerRpc(ulong interactorNetId)
+    public void Drop(Vector3 targetPosition, Quaternion targetRotation, Vector3 initialVelocity = default, GameObject thrower = null)
     {
-        _holderNetworkObjectId.Value = interactorNetId;
-
-        // 소유자 클라이언트에게 아이템 획득 통지
-        NotifyPickupClientRpc(interactorNetId);
+        transform.position = targetPosition;
+        transform.rotation = targetRotation;
+        SetInitialDropPhysics(initialVelocity);
     }
-
-    [ClientRpc]
-    private void NotifyPickupClientRpc(ulong interactorNetId)
-    {
-        if (NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(interactorNetId, out NetworkObject holderNetObj))
-        {
-            var interactor = holderNetObj.GetComponent<PlayerInteraction>();
-            if (interactor != null && interactor.IsOwner)
-            {
-                interactor.OnItemPickedUp(this);
-            }
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void DropServerRpc(Vector3 targetPosition, Quaternion targetRotation)
-    {
-        _holderNetworkObjectId.Value = ulong.MaxValue;
-
-        // 모든 클라이언트에 최종 내려놓기 위치/각도 동기화
-        SyncDropPositionClientRpc(targetPosition, targetRotation);
-    }
-
-    [ClientRpc]
-    private void SyncDropPositionClientRpc(Vector3 targetPosition, Quaternion targetRotation)
-    {
-        InternalDrop(targetPosition, targetRotation);
-
-        if (_currentHolder != null && _currentHolder.IsOwner)
-        {
-            _currentHolder.OnItemDropped(this);
-        }
-    }
-
-    #endregion
 }

@@ -76,11 +76,12 @@ public static class SetupItemActionSystem
         go.GetComponent<Renderer>().sharedMaterial = mat;
 
         go.AddComponent<NetworkObject>();
-        var gunItem = go.AddComponent<SampleGunItem>();
+        var pickable = go.AddComponent<PickableItem>();
+        go.AddComponent<SampleGunItem>();
 
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(gunItem, "샘플 권총 들기");
-        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(gunItem, 0.12f);
+        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(pickable, "샘플 권총 들기");
+        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(pickable, 0.12f);
 
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, GUN_PREFAB_PATH);
         Object.DestroyImmediate(go);
@@ -104,11 +105,12 @@ public static class SetupItemActionSystem
         go.GetComponent<Renderer>().sharedMaterial = mat;
 
         go.AddComponent<NetworkObject>();
-        var medkitItem = go.AddComponent<SampleMedkitItem>();
+        var pickable = go.AddComponent<PickableItem>();
+        go.AddComponent<SampleMedkitItem>();
 
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(medkitItem, "구급키트 들기");
-        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(medkitItem, 0.15f);
+        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(pickable, "구급키트 들기");
+        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(pickable, 0.15f);
 
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, MEDKIT_PREFAB_PATH);
         Object.DestroyImmediate(go);
@@ -132,11 +134,12 @@ public static class SetupItemActionSystem
         go.GetComponent<Renderer>().sharedMaterial = mat;
 
         go.AddComponent<NetworkObject>();
-        var chargedItem = go.AddComponent<SampleChargedWeaponItem>();
+        var pickable = go.AddComponent<PickableItem>();
+        go.AddComponent<SampleChargedWeaponItem>();
 
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(chargedItem, "차지 라이플 들기");
-        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(chargedItem, 0.15f);
+        typeof(PickableItem).GetField("_promptText", flags)?.SetValue(pickable, "차지 라이플 들기");
+        typeof(PickableItem).GetField("_dropVerticalOffset", flags)?.SetValue(pickable, 0.15f);
 
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, CHARGED_PREFAB_PATH);
         Object.DestroyImmediate(go);
@@ -173,14 +176,16 @@ public static class SetupItemActionSystem
     private static void EnsureSceneItem(string name, GameObject prefab, Vector3 position)
     {
         var existing = GameObject.Find(name);
-        if (existing == null)
+        if (existing != null)
         {
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            instance.name = name;
-            instance.transform.position = position;
-            instance.transform.rotation = Quaternion.identity;
-            Undo.RegisterCreatedObjectUndo(instance, $"Create {name}");
+            Undo.DestroyObjectImmediate(existing);
         }
+
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        instance.name = name;
+        instance.transform.position = position;
+        instance.transform.rotation = Quaternion.identity;
+        Undo.RegisterCreatedObjectUndo(instance, $"Create {name}");
     }
 
     private static void RegisterNetworkPrefab(GameObject prefab)

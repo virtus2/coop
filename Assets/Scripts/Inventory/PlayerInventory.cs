@@ -60,9 +60,12 @@ public class PlayerInventory : NetworkBehaviour
         LocalInstance = null;
     }
 
+    private PlayerItemHolder _itemHolder;
+
     private void Awake()
     {
         EnsureInitialized();
+        _itemHolder = GetComponent<PlayerItemHolder>();
     }
 
     public void EnsureInitialized()
@@ -99,12 +102,13 @@ public class PlayerInventory : NetworkBehaviour
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         if (LocalInstance == this)
         {
             LocalInstance = null;
         }
+        base.OnDestroy();
     }
 
     private void InitializeSlots()
@@ -236,7 +240,9 @@ public class PlayerInventory : NetworkBehaviour
 
     /// <summary>
     /// 지정된 인덱스의 툴바 슬롯을 선택합니다.
-    /// 이미 선택된 번호를 다시 누르면 해제(-1)할 수 있도록 토글 지원.
+    /// 1. 손에 바닥에서 주운 아이템이 있는 경우: 툴바 슬롯(또는 남은 칸)으로 삽입하고 손을 비웁니다.
+    /// 2. 손에 들고 있는 아이템이 없을 때: 해당 번호 아이템을 손에 들고 하이라이트합니다.
+    /// 3. 해당 번호 아이템을 손에 든 상태에서 다시 그 번호를 누르면: 손을 비우고 하이라이트를 취소합니다.
     /// </summary>
     public void SelectToolbarSlot(int index)
     {
@@ -245,21 +251,93 @@ public class PlayerInventory : NetworkBehaviour
             index = -1;
         }
 
-        if (_selectedToolbarIndex == index)
+        // 1. 바닥에서 주워 손에 든 아이템이 있는 경우
+        if (_itemHolder == null)
         {
-            // 같은 슬롯을 다시 누르면 빈손 상태로 토글
-            _selectedToolbarIndex = -1;
-        }
-        else
-        {
-            _selectedToolbarIndex = index;
+            _itemHolder = GetComponent<PlayerItemHolder>();
         }
 
+        if (_itemHolder != null && _itemHolder.IsHoldingWorldItem)
+        {
+            if (_itemHolder.TryPutHeldWorldItemToToolbar(index))
+            {
+                return;
+            }
+        }
+
+        // 2. 이미 해당 슬롯을 손에 들고 있는 상태에서 다시 그 번호를 누른 경우:
+        // 손에 있던 해당 번호 아이템을 비우고 하이라이트를 취소함
+        if (_selectedToolbarIndex == index)
+        {
+            _selectedToolbarIndex = -1;
+            NotifySelectedToolbarChanged();
+            return;
+        }
+
+        // 3. 해당 번호 슬롯을 손에 들고 하이라이트
+        _selectedToolbarIndex = index;
         NotifySelectedToolbarChanged();
     }
 
     /// <summary>
-    /// 강제로 특정 슬롯을 선택 (토글 없이)
+    /// 특정 ItemData를 지정된 툴바 슬롯에 삽입합니다.
+    /// 만약 해당 슬롯에 이미 다른 아이템이 있다면, 기존 아이템을 그리드 인벤토리의 빈 칸으로 이동시킵니다.
+    /// </summary>
+    public bool PutItemIntoToolbarSlot(int toolbarIndex, ItemData itemData, int quantity = 1)
+    {
+        if (itemData == null || toolbarIndex < 0 || toolbarIndex >= TOOLBAR_SIZE)
+        {
+            return false;
+        }
+
+        EnsureInitialized();
+        var targetSlot = _toolbarSlots[toolbarIndex];
+
+        // 1. 해당 툴바 슬롯이 비어있는 경우
+        if (targetSlot.IsEmpty)
+        {
+            targetSlot.Set(itemData, quantity);
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
+
+        // 2. 같은 아이템이고 스택이 가능한 경우
+        if (targetSlot.Item == itemData && targetSlot.Quantity + quantity <= itemData.MaxStackSize)
+        {
+            targetSlot.AddQuantity(quantity);
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
+
+        // 3. 이미 다른 아이템이 들어있는 경우:
+        // 기존 아이템을 그리드 인벤토리의 빈 공간으로 이동 시도
+        ItemData existingItem = targetSlot.Item;
+        int existingQuantity = targetSlot.Quantity;
+
+        bool addedToGrid = TryAddExistingItemToGrid(existingItem, existingQuantity);
+        if (addedToGrid)
+        {
+            targetSlot.Set(itemData, quantity);
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryAddExistingItemToGrid(ItemData item, int quantity)
+    {
+        int remaining = quantity;
+        remaining = TryStackItem(_gridSlots, item, remaining);
+        if (remaining > 0)
+        {
+            remaining = TryPutEmptySlot(_gridSlots, item, remaining);
+        }
+        return remaining == 0;
+    }
+
+    /// <summary>
+    /// 강제로 특정 슬롯을 선택
     /// </summary>
     public void SetSelectedToolbarSlot(int index)
     {
@@ -270,6 +348,27 @@ public class PlayerInventory : NetworkBehaviour
 
         _selectedToolbarIndex = index;
         NotifySelectedToolbarChanged();
+    }
+
+    /// <summary>
+    /// 현재 선택된 툴바 슬롯의 아이템을 지정 수량만큼 제거합니다 (땅에 내려놓을 때 호출).
+    /// </summary>
+    public bool RemoveCurrentHeldItem(int quantity = 1)
+    {
+        if (_selectedToolbarIndex < 0 || _selectedToolbarIndex >= TOOLBAR_SIZE)
+        {
+            return false;
+        }
+
+        return RemoveItem(new SlotLocation(SlotType.Toolbar, _selectedToolbarIndex), quantity);
+    }
+
+    /// <summary>
+    /// 인벤토리 내용 변경 이벤트를 외부에 알립니다.
+    /// </summary>
+    public void NotifyInventoryChanged()
+    {
+        OnInventoryChanged?.Invoke();
     }
 
     private void NotifySelectedToolbarChanged()
@@ -289,6 +388,21 @@ public class PlayerInventory : NetworkBehaviour
 
         var slot = _toolbarSlots[_selectedToolbarIndex];
         return slot != null && !slot.IsEmpty ? slot.Item : null;
+    }
+
+    /// <summary>
+    /// 빈 툴바 슬롯의 인덱스를 반환합니다. 빈 슬롯이 없으면 -1을 반환합니다.
+    /// </summary>
+    public int FindEmptyToolbarSlot()
+    {
+        for (int i = 0; i < _toolbarSlots.Length; i++)
+        {
+            if (_toolbarSlots[i].IsEmpty)
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /// <summary>

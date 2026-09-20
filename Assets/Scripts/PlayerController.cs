@@ -102,6 +102,13 @@ public class PlayerController : NetworkBehaviour
             _characterController.radius = 0.5f;
         }
 
+        // 플레이어 캐릭터 및 하위 콜라이더들의 레이어를 'Player' 레이어로 보장 (아이템 물리 충돌 무시 매트릭스 적용)
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer >= 0)
+        {
+            SetLayerRecursively(gameObject, playerLayer);
+        }
+
         // CameraTarget fallback
         if (_cameraTarget == null)
         {
@@ -357,14 +364,20 @@ public class PlayerController : NetworkBehaviour
     }
 
     /// <summary>
-    /// 원격 플레이어의 머리 상하 각도를 네트워크 동기화 값으로 부드럽게 보간합니다.
+    /// 원격 플레이어의 머리 및 카메라 타겟(손 HoldPoint 포함) 상하 각도를 네트워크 동기화 값으로 부드럽게 보간합니다.
     /// </summary>
     private void UpdateRemoteHead()
     {
+        Quaternion headTargetRotation = Quaternion.Euler(GetClampedHeadPitch(_networkCameraPitch.Value), 0f, 0f);
         if (_headTransform != null)
         {
-            Quaternion targetRotation = Quaternion.Euler(GetClampedHeadPitch(_networkCameraPitch.Value), 0f, 0f);
-            _headTransform.localRotation = Quaternion.Slerp(_headTransform.localRotation, targetRotation, Time.deltaTime * 20f);
+            _headTransform.localRotation = Quaternion.Slerp(_headTransform.localRotation, headTargetRotation, Time.deltaTime * 20f);
+        }
+
+        if (_cameraTarget != null)
+        {
+            Quaternion cameraTargetRotation = Quaternion.Euler(_networkCameraPitch.Value, 0f, 0f);
+            _cameraTarget.localRotation = Quaternion.Slerp(_cameraTarget.localRotation, cameraTargetRotation, Time.deltaTime * 20f);
         }
     }
 
@@ -480,5 +493,14 @@ public class PlayerController : NetworkBehaviour
 
         Teleport(targetPosition, targetRotation, cameraPitch);
         Debug.Log($"[PlayerController] 소유 클라이언트에서 텔레포트 수행 완료: 위치 {targetPosition}, 각도 {targetRotation.eulerAngles}, 카메라 {cameraPitch}");
+    }
+
+    private static void SetLayerRecursively(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
     }
 }

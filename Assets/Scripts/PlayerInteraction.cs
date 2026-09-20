@@ -52,7 +52,17 @@ public class PlayerInteraction : NetworkBehaviour
             return _holdPoint;
         }
     }
-    public bool IsHoldingItem => _heldItem != null;
+    private PlayerItemHolder _itemHolder;
+    public PlayerItemHolder ItemHolder
+    {
+        get
+        {
+            if (_itemHolder == null) _itemHolder = GetComponent<PlayerItemHolder>();
+            return _itemHolder;
+        }
+    }
+
+    public bool IsHoldingItem => (ItemHolder != null && ItemHolder.IsHoldingItem) || _heldItem != null;
     public PickableItem HeldItem => _heldItem;
     public IFireable FireableItem => _fireableItem;
     public IUsable UsableItem => _usableItem;
@@ -61,6 +71,7 @@ public class PlayerInteraction : NetworkBehaviour
     private void Awake()
     {
         InitializeHoldPoint();
+        if (_itemHolder == null) _itemHolder = GetComponent<PlayerItemHolder>();
     }
 
     private void Start()
@@ -96,7 +107,7 @@ public class PlayerInteraction : NetworkBehaviour
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         if (IsOwner || !IsSpawned)
         {
@@ -107,6 +118,7 @@ public class PlayerInteraction : NetworkBehaviour
                 InteractionUI.Instance.HideHeldHint();
             }
         }
+        base.OnDestroy();
     }
 
     private void InitializeHoldPoint()
@@ -253,13 +265,6 @@ public class PlayerInteraction : NetworkBehaviour
 
     private void UpdateAimRaycast()
     {
-        // 이미 물체를 들고 있는 경우 상호작용 대상 감지 비활성화
-        if (_heldItem != null)
-        {
-            ClearCurrentTarget();
-            return;
-        }
-
         Ray ray = _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         int hitCount = Physics.RaycastNonAlloc(ray, _raycastHits, _interactionRange, _interactionLayerMask, QueryTriggerInteraction.Ignore);
@@ -330,7 +335,7 @@ public class PlayerInteraction : NetworkBehaviour
     /// </summary>
     private void HandleItemActionUpdate()
     {
-        if (_heldItem == null)
+        if (!IsHoldingItem)
         {
             return;
         }
@@ -501,17 +506,92 @@ public class PlayerInteraction : NetworkBehaviour
         _isUsingItem = false;
     }
 
-    private void UpdateHeldHintUI()
+    private class GunAction : IFireable
     {
-        if (InteractionUI.Instance == null || _heldItem == null)
+        public bool CanFire(PlayerInteraction player) => true;
+        public void Fire(PlayerInteraction player)
+        {
+            Debug.Log($"<color=orange>[SampleGunItem]</color> '샘플 권총' 발사! 빵! (플레이어: {player.name})");
+        }
+    }
+
+    private class MedkitAction : IUsable
+    {
+        public float RequiredHoldDuration => 1.5f;
+        public bool CanUse(PlayerInteraction player) => true;
+        public void OnUseStart(PlayerInteraction player)
+        {
+            Debug.Log($"<color=green>[SampleMedkitItem]</color> 구급키트 사용 시작... (홀드 1.5초 필요)");
+        }
+        public void OnUseUpdate(PlayerInteraction player, float currentHoldDuration) { }
+        public void OnUseEnd(PlayerInteraction player, bool completed)
+        {
+            if (completed)
+            {
+                Debug.Log($"<color=green>[SampleMedkitItem]</color> 구급키트 사용 완료! 체력이 회복되었습니다.");
+            }
+            else
+            {
+                Debug.Log($"<color=yellow>[SampleMedkitItem]</color> 구급키트 사용 취소됨.");
+            }
+        }
+    }
+
+    private class ChargedWeaponAction : IFireable, IUsable
+    {
+        public float RequiredHoldDuration => 2.0f;
+        public bool CanFire(PlayerInteraction player) => true;
+        public void Fire(PlayerInteraction player)
+        {
+            Debug.Log($"<color=cyan>[SampleChargedWeaponItem]</color> 기본 빔 찌릿! (플레이어: {player.name})");
+        }
+        public bool CanUse(PlayerInteraction player) => true;
+        public void OnUseStart(PlayerInteraction player)
+        {
+            Debug.Log($"<color=cyan>[SampleChargedWeaponItem]</color> 메가 레이저 충전 시작! 위이이잉~ (홀드 2.0초)");
+        }
+        public void OnUseUpdate(PlayerInteraction player, float currentHoldDuration) { }
+        public void OnUseEnd(PlayerInteraction player, bool completed)
+        {
+            if (completed)
+            {
+                Debug.Log($"<color=cyan>[SampleChargedWeaponItem]</color> 콰아아앙! 메가 레이저 발사 성공!");
+            }
+            else
+            {
+                Debug.Log($"<color=yellow>[SampleChargedWeaponItem]</color> 레이저 충전 취소됨.");
+            }
+        }
+    }
+
+    private readonly GunAction _gunAction = new GunAction();
+    private readonly MedkitAction _medkitAction = new MedkitAction();
+    private readonly ChargedWeaponAction _chargedWeaponAction = new ChargedWeaponAction();
+
+    public void UpdateHeldHintUI(GameObject heldInstance = null, ItemData itemData = null)
+    {
+        if (InteractionUI.Instance == null)
         {
             return;
         }
 
-        var placeableItem = _heldItem.GetComponent<PlaceableItem>();
-        if (placeableItem != null)
+        ItemData currentData = itemData != null ? itemData : (ItemHolder != null ? ItemHolder.CurrentHeldItemData : null);
+        if (currentData == null)
         {
-            InteractionUI.Instance.ShowHeldHint($"[우클릭] {placeableItem.BuildingPrefab?.DisplayName ?? "블록"} 설치 | [R] 회전 | [G] 내려놓기");
+            InteractionUI.Instance.HideHeldHint();
+            return;
+        }
+
+        if (ItemHolder != null && ItemHolder.IsHoldingWorldItem)
+        {
+            InteractionUI.Instance.ShowHeldHint("[1~0] 툴바 슬롯에 넣기 | [G] 내려놓기");
+            return;
+        }
+
+        if (currentData.ActionType == ItemActionType.Placeable || (heldInstance != null && heldInstance.GetComponent<PlaceableItem>() != null))
+        {
+            string name = currentData.PlaceableBuildingPrefab != null ? currentData.PlaceableBuildingPrefab.DisplayName : currentData.ItemName;
+            InteractionUI.Instance.ShowHeldHint($"[우클릭] {name} 설치 | [R] 회전 | [G] 내려놓기");
             return;
         }
 
@@ -529,109 +609,142 @@ public class PlayerInteraction : NetworkBehaviour
         }
         else
         {
-            InteractionUI.Instance.ShowHeldHint("[좌클릭 / G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[G] 내려놓기");
         }
     }
 
     /// <summary>
-    /// PickableItem에서 플레이어가 아이템을 주웠을 때 호출됩니다.
+    /// PlayerItemHolder에서 손에 든 모델이 변경(장착/해제)되었을 때 호출됩니다.
+    /// ItemData.ActionType에 따라 액션 핸들러를 바인딩하고 UI 힌트를 갱신합니다.
     /// </summary>
-    public void OnItemPickedUp(PickableItem item)
+    public void OnHeldItemChanged(GameObject heldInstance, ItemData itemData)
     {
-        _heldItem = item;
-        _fireableItem = item != null ? item.GetComponent<IFireable>() : null;
-        _usableItem = item != null ? item.GetComponent<IUsable>() : null;
-        ClearCurrentTarget();
         ResetItemActionState();
-        UpdateHeldHintUI();
 
-        // 설치 가능한 블록 아이템인 경우 그리드 건설 모드 시작
-        var placeableItem = item != null ? item.GetComponent<PlaceableItem>() : null;
-        if (placeableItem != null && GridBuildingController.Instance != null)
+        if (itemData != null)
         {
-            GridBuildingController.Instance.StartBuilding(placeableItem);
+            switch (itemData.ActionType)
+            {
+                case ItemActionType.Gun:
+                    _fireableItem = _gunAction;
+                    _usableItem = null;
+                    break;
+                case ItemActionType.Medkit:
+                    _fireableItem = null;
+                    _usableItem = _medkitAction;
+                    break;
+                case ItemActionType.ChargedWeapon:
+                    _fireableItem = _chargedWeaponAction;
+                    _usableItem = _chargedWeaponAction;
+                    break;
+                case ItemActionType.Placeable:
+                    _fireableItem = null;
+                    _usableItem = null;
+                    if (GridBuildingController.Instance != null && itemData.PlaceableBuildingPrefab != null)
+                    {
+                        GridBuildingController.Instance.StartBuilding(itemData.PlaceableBuildingPrefab);
+                    }
+                    break;
+                default:
+                    _fireableItem = heldInstance != null ? heldInstance.GetComponent<IFireable>() : null;
+                    _usableItem = heldInstance != null ? heldInstance.GetComponent<IUsable>() : null;
+                    break;
+            }
+
+            var placeableItem = heldInstance != null ? heldInstance.GetComponent<PlaceableItem>() : null;
+            if (placeableItem != null && GridBuildingController.Instance != null)
+            {
+                GridBuildingController.Instance.StartBuilding(placeableItem);
+            }
         }
-    }
-
-    /// <summary>
-    /// PickableItem에서 아이템이 내려놓아졌을 때 호출됩니다.
-    /// </summary>
-    public void OnItemDropped(PickableItem item)
-    {
-        if (_heldItem == null || _heldItem == item)
+        else
         {
-            ResetItemActionState();
-            _heldItem = null;
             _fireableItem = null;
             _usableItem = null;
 
-            // 건설 모드 종료
             if (GridBuildingController.Instance != null)
             {
                 GridBuildingController.Instance.StopBuilding();
             }
         }
 
-        if (InteractionUI.Instance != null)
-        {
-            InteractionUI.Instance.HideHeldHint();
-        }
+        UpdateHeldHintUI(heldInstance, itemData);
     }
 
     /// <summary>
-    /// 손에 들고 있는 물체를 조준선 방향의 지면에 내려놓습니다.
+    /// 월드에 놓인 물리 아이템을 획득합니다. (E키 상호작용)
     /// </summary>
-    public void DropHeldItem()
+    public void PickupWorldItem(PickableItem worldItem)
     {
-        if (_heldItem == null)
+        if (worldItem == null)
         {
             return;
         }
 
-        Vector3 dropPosition = Vector3.zero;
-        Quaternion dropRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
-
-        Ray ray = _mainCamera != null
-            ? _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
-            : new Ray(transform.position + Vector3.up * 1.5f, transform.forward);
-
-        // 1. 시선 방향 레이캐스트로 닿는 지면 확인
-        bool hasHit = false;
-        if (Physics.Raycast(ray, out RaycastHit hit, _maxDropReach, _interactionLayerMask, QueryTriggerInteraction.Ignore))
+        if (ItemHolder != null)
         {
-            if (hit.collider.transform.root != transform.root)
+            bool pickedUp = ItemHolder.PickupWorldItem(worldItem);
+            if (pickedUp)
             {
-                dropPosition = hit.point + hit.normal * _heldItem.DropVerticalOffset;
-                hasHit = true;
+                ClearCurrentTarget();
             }
         }
+    }
 
-        if (!hasHit)
+    /// <summary>
+    /// 하위 호환성 지원용 (레거시 호출 대비)
+    /// </summary>
+    public void OnItemPickedUp(PickableItem item)
+    {
+        PickupWorldItem(item);
+    }
+
+    /// <summary>
+    /// 하위 호환성 지원용 (레거시 호출 대비)
+    /// </summary>
+    public void OnItemDropped(PickableItem item)
+    {
+        OnHeldItemChanged(null, null);
+    }
+
+    /// <summary>
+    /// 손에 들고 있는 물체를 플레이어가 바라보는 시선 방향으로 물리적으로 던집니다.
+    /// 멀티플레이어 환경에서 서버 RPC를 통해 WorldPrefab 스폰 및 동일한 물리 속도를 부여합니다.
+    /// </summary>
+    public void DropHeldItem()
+    {
+        if (!IsHoldingItem)
         {
-            // 2. 허공이나 먼 곳을 보고 있을 경우: 플레이어 앞쪽 1.5m 위치에서 아래로 레이캐스트
-            Vector3 checkPos = transform.position + transform.forward * 1.5f + Vector3.up * 0.5f;
-            if (Physics.Raycast(checkPos, Vector3.down, out RaycastHit downHit, 2.5f, _interactionLayerMask, QueryTriggerInteraction.Ignore))
-            {
-                dropPosition = downHit.point + Vector3.up * _heldItem.DropVerticalOffset;
-            }
-            else
-            {
-                // 바닥 감지 실패 시 발밑 앞쪽에 배치
-                dropPosition = transform.position + transform.forward * 1.0f + Vector3.up * _heldItem.DropVerticalOffset;
-            }
+            return;
         }
 
-        PickableItem itemToDrop = _heldItem;
+        // 1. 카메라 시선 방향 및 투척 시작 위치 계산
+        Vector3 lookDir = _mainCamera != null ? _mainCamera.transform.forward : transform.forward;
+        Vector3 eyePos = _mainCamera != null ? _mainCamera.transform.position : transform.position + Vector3.up * 1.5f;
+
+        // 벽 뚫림 방지: 전방 0.6m 내에 벽/장애물이 있으면 거리를 좁혀 안전한 위치에서 투척 시작
+        float spawnDistance = 0.5f;
+        if (Physics.Raycast(eyePos, lookDir, out RaycastHit wallHit, 0.6f, _interactionLayerMask, QueryTriggerInteraction.Ignore))
+        {
+            spawnDistance = Mathf.Max(0.1f, wallHit.distance - 0.15f);
+        }
+
+        Vector3 throwOrigin = eyePos + lookDir * spawnDistance;
+        Quaternion throwRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
+        // 2. 투척 속도 벡터 계산 (시선 방향 6.0m/s + 상향 1.5m/s 포물선 호)
+        Vector3 throwVelocity = lookDir * 6.0f + Vector3.up * 1.5f;
+
         ResetItemActionState();
-        _heldItem = null;
-        _fireableItem = null;
-        _usableItem = null;
 
         if (InteractionUI.Instance != null)
         {
             InteractionUI.Instance.HideHeldHint();
         }
 
-        itemToDrop.Drop(dropPosition, dropRotation);
+        if (ItemHolder != null)
+        {
+            ItemHolder.DropCurrentHeldItem(throwOrigin, throwRotation, throwVelocity);
+        }
     }
 }

@@ -415,7 +415,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 40
+  m_SortingOrder: 60
   m_TargetDisplay: 0
 --- !u!114 &3613039960855302606
 MonoBehaviour:
@@ -588,7 +588,7 @@ RectTransform:
   - {fileID: 4427184205876116924}
   - {fileID: 4617426829601533269}
   - {fileID: 3981316486086653473}
-  - {fileID: 7925591800564964009}
+  - {fileID: 1777518355167911648}
   - {fileID: 3334786322147280002}
   - {fileID: 6941677345528439442}
   - {fileID: 4284022497637426771}
@@ -4991,7 +4991,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d18fa68f5096ccd44b78574a385c6c7b, type: 3}
---- !u!224 &7925591800564964009 stripped
+--- !u!224 &1777518355167911648 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8455042412382340168, guid: d18fa68f5096ccd44b78574a385c6c7b, type: 3}
   m_PrefabInstance: {fileID: 7925591800564964008}

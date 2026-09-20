@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2127943752658390685}
   - component: {fileID: 7419157233902859885}
   - component: {fileID: 100637185518681515}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -126,7 +126,7 @@ GameObject:
   - component: {fileID: 5346719271777898557}
   - component: {fileID: 827454886760676545}
   - component: {fileID: 3567591618041430233}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Head
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -239,7 +239,7 @@ GameObject:
   - component: {fileID: 3365776971045444754}
   - component: {fileID: 6616524596237597955}
   - component: {fileID: 9076109673795316873}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: EyeIris
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -335,7 +335,9 @@ GameObject:
   - component: {fileID: 2200000000000000003}
   - component: {fileID: 1563815384335395752}
   - component: {fileID: 1493050835772267033}
-  m_Layer: 0
+  - component: {fileID: 8702420973429685119}
+  - component: {fileID: 2187705669790487200}
+  m_Layer: 7
   m_Name: PlayerPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -578,6 +580,40 @@ MonoBehaviour:
   AnimatorParameterEntries:
     ParameterEntries: []
   AnimatorParametersExpanded: 0
+--- !u!114 &8702420973429685119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2942e900bb0e7df4391802f62496b905, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  ShowTopMostFoldoutHeaderGroup: 1
+  _gridWidth: 5
+  _gridHeight: 4
+  _initialItems:
+  - {fileID: 11400000, guid: 7ab8f0b5486960a48af56be350167c5a, type: 2}
+  - {fileID: 11400000, guid: 984057d132687c247bc1ab2f7da5b699, type: 2}
+  - {fileID: 11400000, guid: 16306e47a8be7b446b1f50a6137e9c26, type: 2}
+  - {fileID: 11400000, guid: fbc8fff87e3622c4789ba5d21150e23e, type: 2}
+  _selectedToolbarIndex: 0
+--- !u!114 &2187705669790487200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d8ee8cfae7d5d84eb8bcb76a12f6002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerItemHolder
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &4416810848816386381
 GameObject:
   m_ObjectHideFlags: 0
@@ -587,7 +623,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4096513234399327334}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: HoldPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -620,7 +656,7 @@ GameObject:
   - component: {fileID: 6103798718191677774}
   - component: {fileID: 4659229763099247034}
   - component: {fileID: 5825486798950847732}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: EyeIris
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -709,7 +745,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6014250300369364598}
   - component: {fileID: 3285035400602289599}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: FirstPersonCinemachineCamera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -785,7 +821,7 @@ GameObject:
   - component: {fileID: 2231842134257518096}
   - component: {fileID: 6363165433800658593}
   - component: {fileID: 8525454791495036138}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Eyeball
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -876,7 +912,7 @@ GameObject:
   - component: {fileID: 5815366812783874549}
   - component: {fileID: 8513539866035636218}
   - component: {fileID: 4234058288165273728}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Eyeball (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -965,7 +1001,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3336399786481951659}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CameraTarget
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -205,6 +205,12 @@ MonoBehaviour:
   _windowPanel: {fileID: 2241605788726021346}
   _mouseSensitivitySlider: {fileID: 3624869158236852831}
   _mouseSensitivityValueText: {fileID: 2899695744415912886}
+  _masterVolumeSlider: {fileID: 0}
+  _masterVolumeValueText: {fileID: 0}
+  _bgmVolumeSlider: {fileID: 0}
+  _bgmVolumeValueText: {fileID: 0}
+  _sfxVolumeSlider: {fileID: 0}
+  _sfxVolumeValueText: {fileID: 0}
   _closeButton: {fileID: 4684312077191553844}
 --- !u!1 &3504006410214940991
 GameObject:

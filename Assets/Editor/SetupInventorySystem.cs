@@ -12,7 +12,7 @@ using UnityEngine.UI;
 /// </summary>
 public static class SetupInventorySystem
 {
-    private const string ITEM_DATA_FOLDER = "Assets/ItemData";
+    private const string ITEM_DATA_FOLDER = "Assets/Resources/ItemData";
     private const string ICONS_FOLDER = "Assets/Sprites/Icons";
     private const string PREFABS_FOLDER = "Assets/Prefabs";
     private const string SLOT_PREFAB_PATH = "Assets/Prefabs/InventorySlotPrefab.prefab";
@@ -59,6 +59,14 @@ public static class SetupInventorySystem
 
     private static void EnsureFolders()
     {
+        if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+        {
+            AssetDatabase.CreateFolder("Assets", "Resources");
+        }
+        if (!AssetDatabase.IsValidFolder(ITEM_DATA_FOLDER))
+        {
+            AssetDatabase.CreateFolder("Assets/Resources", "ItemData");
+        }
         if (!AssetDatabase.IsValidFolder("Assets/Sprites"))
         {
             AssetDatabase.CreateFolder("Assets", "Sprites");
@@ -66,10 +74,6 @@ public static class SetupInventorySystem
         if (!AssetDatabase.IsValidFolder(ICONS_FOLDER))
         {
             AssetDatabase.CreateFolder("Assets/Sprites", "Icons");
-        }
-        if (!AssetDatabase.IsValidFolder(ITEM_DATA_FOLDER))
-        {
-            AssetDatabase.CreateFolder("Assets", "ItemData");
         }
         if (!AssetDatabase.IsValidFolder(PREFABS_FOLDER))
         {

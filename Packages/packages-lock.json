@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.kyrylokuzyk.primetween": {
+      "version": "file:com.kyrylokuzyk.primetween",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.raybelcreation.netcode.transport.steam": {
       "version": "https://github.com/RaybelGames/Steam-Network-Transport-for-NGO.git",
       "depth": 0,

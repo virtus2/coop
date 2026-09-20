@@ -134,6 +134,40 @@ public class GridBuildingController : MonoBehaviour
     }
 
     /// <summary>
+    /// PlaceableObject 프리팹으로 건설 모드를 직접 활성화합니다.
+    /// </summary>
+    public void StartBuilding(PlaceableObject buildingPrefab)
+    {
+        if (buildingPrefab == null)
+        {
+            StopBuilding();
+            return;
+        }
+
+        _activePlaceableItem = null;
+        _currentPrefab = buildingPrefab;
+        _isBuildModeActive = true;
+        _currentRotationAngle = 0;
+
+        if (_gridVisualizer == null)
+        {
+            InitializeComponents();
+        }
+
+        if (_gridVisualizer != null)
+        {
+            _gridVisualizer.ShowGrid();
+        }
+
+        if (_placementPreview != null)
+        {
+            _placementPreview.Show(_currentPrefab);
+        }
+
+        Debug.Log($"[GridBuildingController] 건설 모드 활성화: {_currentPrefab.DisplayName}");
+    }
+
+    /// <summary>
     /// 블록 아이템을 내려놓거나 소모했을 때 건설 모드를 비활성화합니다.
     /// </summary>
     public void StopBuilding()

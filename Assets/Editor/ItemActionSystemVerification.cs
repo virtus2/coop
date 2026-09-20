@@ -54,28 +54,39 @@ public static class ItemActionSystemVerification
 
             // 3. 인메모리 상호작용 및 아이템 획득 시 인터페이스 캐싱 검증
             GameObject playerGO = new GameObject("TestPlayer");
+            var inventory = playerGO.AddComponent<PlayerInventory>();
+            var itemHolder = playerGO.AddComponent<PlayerItemHolder>();
             var interactor = playerGO.AddComponent<PlayerInteraction>();
+
+            ItemData gunItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleGunItemData.asset");
+            ItemData medkitItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleMedkitItemData.asset");
+            ItemData chargedItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleChargedWeaponItemData.asset");
+            ItemData boxItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/PickableBoxItemData.asset");
 
             GameObject gunGO = new GameObject("TestGun");
             gunGO.AddComponent<Rigidbody>();
-            var gunItem = gunGO.AddComponent<SampleGunItem>();
+            var gunPickable = gunGO.AddComponent<PickableItem>();
+            gunPickable.ItemData = gunItemData;
 
             GameObject medkitGO = new GameObject("TestMedkit");
             medkitGO.AddComponent<Rigidbody>();
-            var medkitItem = medkitGO.AddComponent<SampleMedkitItem>();
+            var medkitPickable = medkitGO.AddComponent<PickableItem>();
+            medkitPickable.ItemData = medkitItemData;
 
             GameObject chargedGO = new GameObject("TestChargedWeapon");
             chargedGO.AddComponent<Rigidbody>();
-            var chargedItem = chargedGO.AddComponent<SampleChargedWeaponItem>();
+            var chargedPickable = chargedGO.AddComponent<PickableItem>();
+            chargedPickable.ItemData = chargedItemData;
 
             GameObject normalBoxGO = new GameObject("TestNormalBox");
             normalBoxGO.AddComponent<Rigidbody>();
             var normalItem = normalBoxGO.AddComponent<PickableItem>();
+            normalItem.ItemData = boxItemData;
 
             try
             {
                 // A. 권총 줍기 검증 (IFireable 단독)
-                gunItem.Interact(interactor);
+                gunPickable.Interact(interactor);
                 Assert(interactor.IsHoldingItem, "권총 획득 후 IsHoldingItem은 true여야 함");
                 Assert(interactor.FireableItem != null, "권총 획득 후 FireableItem이 캐싱되어야 함");
                 Assert(interactor.UsableItem == null, "권총 획득 후 UsableItem은 null이어야 함");
@@ -88,7 +99,7 @@ public static class ItemActionSystemVerification
                 Assert(interactor.FireableItem == null, "내려놓은 후 FireableItem은 null이어야 함");
 
                 // B. 구급키트 줍기 검증 (IUsable 단독)
-                medkitItem.Interact(interactor);
+                medkitPickable.Interact(interactor);
                 Assert(interactor.IsHoldingItem, "구급키트 획득 후 IsHoldingItem은 true여야 함");
                 Assert(interactor.FireableItem == null, "구급키트 획득 후 FireableItem은 null이어야 함");
                 Assert(interactor.UsableItem != null, "구급키트 획득 후 UsableItem이 캐싱되어야 함");
@@ -104,7 +115,7 @@ public static class ItemActionSystemVerification
                 Assert(interactor.UsableItem == null, "내려놓은 후 UsableItem은 null이어야 함");
 
                 // C. 차지무기 줍기 검증 (IFireable & IUsable 복합)
-                chargedItem.Interact(interactor);
+                chargedPickable.Interact(interactor);
                 Assert(interactor.FireableItem != null, "차지무기 획득 후 FireableItem 캐싱 확인");
                 Assert(interactor.UsableItem != null, "차지무기 획득 후 UsableItem 캐싱 확인");
                 interactor.FireableItem.Fire(interactor);
