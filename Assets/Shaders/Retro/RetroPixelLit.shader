@@ -4,12 +4,17 @@ Shader "Retro/RetroPixelLit"
     {
         [MainTexture] _BaseMap ("Texture", 2D) = "white" {}
         [MainColor] _BaseColor ("Color", Color) = (1, 1, 1, 1)
-        _ShadowThreshold ("Shadow Threshold", Range(0.0, 1.0)) = 0.25
-        _MidThreshold ("Midtone Threshold", Range(0.0, 1.0)) = 0.6
-        _ShadowIntensity ("Directional Shadow Fill", Range(0.05, 0.5)) = 0.25
-        _MidIntensity ("Midtone Brightness", Range(0.3, 1.0)) = 0.65
-        [Toggle] _EnableDithering ("Enable Bayer Dithering", Float) = 1
-        _DitherStrength ("Dither Strength", Range(0.0, 0.5)) = 0.15
+
+        [Header(Directional Light Steps)]
+        _ShadowThreshold ("Shadow Threshold", Range(0.01, 1.0)) = 0.2
+        _MidThreshold ("Midtone Threshold", Range(0.01, 1.0)) = 0.55
+        _ShadowIntensity ("Shadow Ambient Brightness", Range(0.0, 0.5)) = 0.2
+        _MidIntensity ("Midtone Brightness", Range(0.2, 0.9)) = 0.6
+
+        [Header(Point Light Steps)]
+        _PointLightThresholdLow ("Point Light Outer Threshold", Range(0.01, 0.5)) = 0.05
+        _PointLightThresholdHigh ("Point Light Inner Threshold", Range(0.1, 1.0)) = 0.35
+        _PointLightMidIntensity ("Point Light Mid Brightness", Range(0.2, 0.9)) = 0.5
     }
 
     SubShader
@@ -69,18 +74,10 @@ Shader "Retro/RetroPixelLit"
                 float _MidThreshold;
                 float _ShadowIntensity;
                 float _MidIntensity;
-                float _EnableDithering;
-                float _DitherStrength;
+                float _PointLightThresholdLow;
+                float _PointLightThresholdHigh;
+                float _PointLightMidIntensity;
             CBUFFER_END
-
-            // Standard 4x4 Bayer Dithering Matrix
-            static const float BayerMatrix4x4[16] =
-            {
-                 0.0 / 16.0,  8.0 / 16.0,  2.0 / 16.0, 10.0 / 16.0,
-                12.0 / 16.0,  4.0 / 16.0, 14.0 / 16.0,  6.0 / 16.0,
-                 3.0 / 16.0, 11.0 / 16.0,  1.0 / 16.0,  9.0 / 16.0,
-                15.0 / 16.0,  7.0 / 16.0, 13.0 / 16.0,  5.0 / 16.0
-            };
 
             Varyings vert(Attributes input)
             {
@@ -96,22 +93,14 @@ Shader "Retro/RetroPixelLit"
                 return output;
             }
 
-            float QuantizeDirectionalLight(float rawLight, float2 screenPixel)
+            // Directional Light: 3-step banded shading (Shadow, Midtone, Highlight)
+            float StepDirectionalLight(float rawLight)
             {
-                float dither = 0.0;
-                if (_EnableDithering > 0.5)
-                {
-                    int2 pixelCoord = int2(screenPixel) % 4;
-                    int ditherIndex = pixelCoord.x + pixelCoord.y * 4;
-                    dither = (BayerMatrix4x4[ditherIndex] - 0.5) * _DitherStrength;
-                }
-
-                float adjustedLight = rawLight + dither;
-                if (adjustedLight < _ShadowThreshold)
+                if (rawLight < _ShadowThreshold)
                 {
                     return _ShadowIntensity;
                 }
-                else if (adjustedLight < _MidThreshold)
+                else if (rawLight < _MidThreshold)
                 {
                     return _MidIntensity;
                 }
@@ -121,33 +110,16 @@ Shader "Retro/RetroPixelLit"
                 }
             }
 
-            float QuantizeAdditionalLight(float rawLight, float2 screenPixel)
+            // Point / Additional Light: 3-step banded shading (0 = out of range, Midtone, Full)
+            float StepAdditionalLight(float rawLight)
             {
-                if (rawLight <= 0.001)
+                if (rawLight < _PointLightThresholdLow)
                 {
                     return 0.0;
                 }
-
-                float dither = 0.0;
-                if (_EnableDithering > 0.5)
+                else if (rawLight < _PointLightThresholdHigh)
                 {
-                    int2 pixelCoord = int2(screenPixel) % 4;
-                    int ditherIndex = pixelCoord.x + pixelCoord.y * 4;
-                    dither = (BayerMatrix4x4[ditherIndex] - 0.5) * _DitherStrength;
-                }
-
-                float adjustedLight = rawLight + dither;
-                if (adjustedLight <= 0.04)
-                {
-                    return 0.0;
-                }
-                else if (adjustedLight < 0.25)
-                {
-                    return 0.35;
-                }
-                else if (adjustedLight < 0.6)
-                {
-                    return 0.7;
+                    return _PointLightMidIntensity;
                 }
                 else
                 {
@@ -165,15 +137,15 @@ Shader "Retro/RetroPixelLit"
 
                 float3 normalWS = normalize(input.normalWS);
 
-                // 1. Main directional light
+                // 1. Directional Main Light (Sun / Moon) with stepped shadow/light bands
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
                 float NdotL = saturate(dot(normalWS, mainLight.direction));
                 float lightAtten = mainLight.shadowAttenuation * mainLight.distanceAttenuation;
-                float mainIntensity = QuantizeDirectionalLight(NdotL * lightAtten, input.positionCS.xy);
+                float mainIntensity = StepDirectionalLight(NdotL * lightAtten);
 
                 float3 lighting = mainLight.color * mainIntensity;
 
-                // 2. Additional point lights (Forward+ / Clustered and Forward compatible)
+                // 2. Additional Lights (Point Lights / Torches) with stepped bands
                 #if defined(_ADDITIONAL_LIGHTS)
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
@@ -188,7 +160,7 @@ Shader "Retro/RetroPixelLit"
                     Light addLight = GetAdditionalLight(clIndex, inputData.positionWS);
                     float addNdotL = saturate(dot(normalWS, addLight.direction));
                     float addAtten = addLight.distanceAttenuation;
-                    float addIntensity = QuantizeAdditionalLight(addNdotL * addAtten, input.positionCS.xy);
+                    float addIntensity = StepAdditionalLight(addNdotL * addAtten);
                     lighting += addLight.color * addIntensity;
                 }
                 #endif
@@ -197,12 +169,12 @@ Shader "Retro/RetroPixelLit"
                     Light addLight = GetAdditionalLight(lightIndex, inputData.positionWS);
                     float addNdotL = saturate(dot(normalWS, addLight.direction));
                     float addAtten = addLight.distanceAttenuation;
-                    float addIntensity = QuantizeAdditionalLight(addNdotL * addAtten, input.positionCS.xy);
+                    float addIntensity = StepAdditionalLight(addNdotL * addAtten);
                     lighting += addLight.color * addIntensity;
                 LIGHT_LOOP_END
                 #endif
 
-                // 3. Ambient light
+                // 3. Ambient lighting
                 float3 ambient = SampleSH(normalWS);
                 float3 finalColor = texColor.rgb * (lighting + ambient * _ShadowIntensity);
 

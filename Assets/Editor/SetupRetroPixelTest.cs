@@ -6,7 +6,8 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 로우폴리 + 픽셀아트 텍스처 스타일을 즉시 테스트할 수 있는 전용 씬과 에셋을 자동 구성하는 에디터 스크립트입니다.
+/// 유니티 기본 URP Lit 머티리얼(무광 Smoothness=0)과 네이티브 RenderScale 다운샘플링으로
+/// 로우폴리 픽셀아트 스타일 테스트 씬을 자동 구성하는 에디터 스크립트입니다.
 /// </summary>
 public static class SetupRetroPixelTest
 {
@@ -19,35 +20,35 @@ public static class SetupRetroPixelTest
     {
         EnsureDirectories();
 
-        // 1. 머티리얼 생성 및 세팅
+        // 1. 유니티 공식 URP Lit 머티리얼 세팅 (Smoothness=0, Metallic=0 완전 무광)
         Material floorMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_StoneFloorMat.mat", new Color(0.18f, 0.2f, 0.24f));
         Material wallMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_StoneWallMat.mat", new Color(0.24f, 0.26f, 0.3f));
         Material pillarMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_PillarMat.mat", new Color(0.32f, 0.24f, 0.18f));
         Material pedestalMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_PedestalMat.mat", new Color(0.12f, 0.13f, 0.16f));
         Material testPropMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_TestPropMat.mat", new Color(0.95f, 0.65f, 0.2f));
-        Material torchHeadMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_TorchFlameMat.mat", new Color(1.0f, 0.6f, 0.1f));
+        Material torchHeadMat = GetOrCreateLitMaterial(MAT_DIR + "/Retro_TorchFlameMat.mat", new Color(1.0f, 0.55f, 0.15f), true);
 
         // 2. 새로운 테스트 씬 생성
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         // 3. 라이팅 & 환경 설정 (어두운 던전 앰비언트 + 은은한 달빛)
         RenderSettings.ambientMode = AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.05f, 0.06f, 0.1f);
+        RenderSettings.ambientLight = new Color(0.06f, 0.07f, 0.11f);
         RenderSettings.subtractiveShadowColor = new Color(0.02f, 0.02f, 0.05f);
 
-        // Directional Light (은은한 푸른 달빛 - 횃불과의 대비 극대화)
+        // Directional Light (은은한 푸른 달빛 - 각진 하드 섀도우)
         GameObject dirLightGo = new GameObject("Directional Light (Moonlight)");
         Light dirLight = dirLightGo.AddComponent<Light>();
         dirLight.type = LightType.Directional;
-        dirLight.color = new Color(0.6f, 0.7f, 0.9f);
-        dirLight.intensity = 0.35f;
+        dirLight.color = new Color(0.65f, 0.75f, 0.95f);
+        dirLight.intensity = 0.45f;
         dirLight.shadows = LightShadows.Hard;
         dirLightGo.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
 
         // 4. 테스트 룸 환경 지오메트리 구축
         GameObject envRoot = new GameObject("--- Environment ---");
 
-        // 바닥
+        // 바닥 (14x14)
         GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.name = "Floor (14x14)";
         floor.transform.parent = envRoot.transform;
@@ -60,7 +61,7 @@ public static class SetupRetroPixelTest
         CreateWall(envRoot.transform, "Wall_Left", new Vector3(-7f, 3f, 0f), new Vector3(1f, 6f, 14f), wallMat);
         CreateWall(envRoot.transform, "Wall_Right", new Vector3(7f, 3f, 0f), new Vector3(1f, 6f, 14f), wallMat);
 
-        // 기둥 4개 및 횃불 조명 (기둥 밖으로 돌출 배치)
+        // 기둥 4개 및 횃불 조명 (기둥 외벽에 배치)
         Vector3[] pillarPositions = new Vector3[]
         {
             new Vector3(-4.5f, 2f, 4.5f),
@@ -79,11 +80,11 @@ public static class SetupRetroPixelTest
             pillar.transform.localScale = new Vector3(0.8f, 4f, 0.8f);
             pillar.GetComponent<MeshRenderer>().sharedMaterial = pillarMat;
 
-            // 기둥 중심에서 방 중앙을 향하는 방향으로 횃불을 기둥 외벽에 배치
+            // 기둥 외벽에 횃불 배치
             Vector3 dirToCenter = (Vector3.zero - new Vector3(pPos.x, 0f, pPos.z)).normalized;
             Vector3 torchPosition = pPos + dirToCenter * 0.65f + new Vector3(0f, 0.6f, 0f);
 
-            // 횃불 브래킷/시각용 불꽃 큐브
+            // 횃불 발광 브래킷
             GameObject torchVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
             torchVisual.name = $"TorchBracket_{i + 1}";
             torchVisual.transform.parent = pillar.transform;
@@ -91,14 +92,14 @@ public static class SetupRetroPixelTest
             torchVisual.transform.localScale = new Vector3(0.25f, 0.35f, 0.25f);
             torchVisual.GetComponent<MeshRenderer>().sharedMaterial = torchHeadMat;
 
-            // 횃불 포인트 라이트
+            // 횃불 포인트 라이트 (따뜻한 오렌지빛)
             GameObject torch = new GameObject($"TorchLight_{i + 1}");
             torch.transform.parent = torchVisual.transform;
             torch.transform.position = torchPosition;
 
             Light torchLight = torch.AddComponent<Light>();
             torchLight.type = LightType.Point;
-            torchLight.color = new Color(1.0f, 0.55f, 0.18f); // 따뜻한 오렌지빛
+            torchLight.color = new Color(1.0f, 0.55f, 0.18f);
             torchLight.range = 9.5f;
             torchLight.intensity = 3.2f;
             torchLight.shadows = LightShadows.None;
@@ -159,7 +160,7 @@ public static class SetupRetroPixelTest
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        Debug.Log("<color=cyan>[SetupRetroPixelTest]</color> 레트로 픽셀 테스트 씬 생성 완료! 경로: " + SCENE_PATH);
+        Debug.Log("<color=cyan>[SetupRetroPixelTest]</color> URP Lit 기반 레트로 픽셀 테스트 씬 생성 완료! 경로: " + SCENE_PATH);
         EditorSceneManager.OpenScene(SCENE_PATH);
     }
 
@@ -181,26 +182,36 @@ public static class SetupRetroPixelTest
         }
     }
 
-    private static Material GetOrCreateLitMaterial(string path, Color color)
+    private static Material GetOrCreateLitMaterial(string path, Color color, bool isEmissive = false)
     {
         Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+
         if (mat == null)
         {
-            Shader shader = Shader.Find("Retro/RetroPixelLit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Universal Render Pipeline/Lit");
-            }
-
             mat = new Material(shader);
-            mat.SetColor("_BaseColor", color);
             AssetDatabase.CreateAsset(mat, path);
+        }
+        else if (mat.shader != shader)
+        {
+            mat.shader = shader;
+        }
+
+        mat.SetColor("_BaseColor", color);
+        mat.SetFloat("_Smoothness", 0.0f); // 완전 무광 매트 재질
+        mat.SetFloat("_Metallic", 0.0f);
+
+        if (isEmissive)
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", color * 2.0f);
         }
         else
         {
-            mat.SetColor("_BaseColor", color);
-            EditorUtility.SetDirty(mat);
+            mat.DisableKeyword("_EMISSION");
         }
+
+        EditorUtility.SetDirty(mat);
         return mat;
     }
 
