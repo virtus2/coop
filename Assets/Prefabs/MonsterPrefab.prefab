@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 1970978414179035517}
   - component: {fileID: 4359609863546773572}
   - component: {fileID: 8775160161181122884}
+  - component: {fileID: 3555839437310143857}
   m_Layer: 0
   m_Name: MonsterPrefab
   m_TagString: Untagged
@@ -230,6 +231,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _defaultName: NonPlayerCharacter
   _maxHealth: 100
+  _baseStaggerDuration: 0.35
+  _staggerDiminishFactor: 0.25
+  _staggerResetDelay: 2
   _autoDespawnOnDeath: 1
   _despawnDelay: 3
   _moveSpeed: 3.5
@@ -315,3 +319,17 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   _minStepInterval: 0.12
+--- !u!114 &3555839437310143857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2589591152186656409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f706e14d50c7a8c4987227e3b37fbbca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Hitbox
+  _hitboxType: 0
+  _damageableTarget: {fileID: 0}

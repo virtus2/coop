@@ -32,6 +32,7 @@ public class PlayerItemHolder : NetworkBehaviour
     public ItemData PendingHeldItemData => _pendingHeldItemData;
     public bool IsHoldingItem => _currentHeldItemData != null;
     public bool IsHoldingWorldItem => _pendingHeldItemData != null;
+    public string NetworkHeldItemId => _networkHeldItemId.Value.ToString();
 
     private void Awake()
     {
@@ -253,6 +254,8 @@ public class PlayerItemHolder : NetworkBehaviour
         {
             _interaction.OnHeldItemChanged(_heldVisualGO, itemData);
         }
+
+        NotifyCombatHeldItemChanged(itemData);
     }
 
     /// <summary>
@@ -305,6 +308,8 @@ public class PlayerItemHolder : NetworkBehaviour
         _heldVisualGO.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation);
         _heldVisualGO.transform.localScale = itemData.HeldLocalScale;
         _heldVisualGO.SetActive(true);
+
+        NotifyCombatHeldItemChanged(itemData);
     }
 
     private void ClearHeldVisual()
@@ -321,6 +326,20 @@ public class PlayerItemHolder : NetworkBehaviour
         if (_interaction != null)
         {
             _interaction.OnHeldItemChanged(null, null);
+        }
+
+        NotifyCombatHeldItemChanged(null);
+    }
+
+    private void NotifyCombatHeldItemChanged(ItemData itemData)
+    {
+        if (TryGetComponent<PlayerGunCombat>(out var gunCombat))
+        {
+            gunCombat.SetEquippedGun(itemData as GunItemData);
+        }
+        if (TryGetComponent<PlayerMeleeCombat>(out var meleeCombat))
+        {
+            meleeCombat.SetEquippedMelee(itemData as MeleeItemData);
         }
     }
 
@@ -473,6 +492,64 @@ public class PlayerItemHolder : NetworkBehaviour
     }
 
     /// <summary>
+    /// 블록 설치 시 현재 손에 쥐고 있는 블록 아이템을 1개 소모합니다.
+    /// 툴바 슬롯 아이템이면 해당 슬롯의 수량을 1 차감하고, 수량이 0개가 되면 슬롯을 비웁니다.
+    /// 바닥에서 주워 든 미수납(Pending) 아이템이면 즉시 손을 비웁니다.
+    /// 잔여 수량이 0이 되면 손 비주얼을 비우고 건설 모드를 즉시 종료합니다.
+    /// </summary>
+    public bool ConsumeCurrentHeldPlaceableItem()
+    {
+        if (!IsHoldingItem || _currentHeldItemData == null)
+        {
+            return false;
+        }
+
+        // 1. 바닥에서 주워 든 미수납 아이템인 경우: 즉시 손 비우기
+        if (_pendingHeldItemData != null)
+        {
+            _pendingHeldItemData = null;
+            ClearHeldVisual();
+            if (IsSpawned && IsOwner)
+            {
+                RequestSetHeldItemServerRpc(string.Empty);
+            }
+            if (GridBuildingController.Instance != null)
+            {
+                GridBuildingController.Instance.StopBuilding();
+            }
+            return true;
+        }
+
+        // 2. 툴바 슬롯에서 꺼내 든 아이템인 경우: 수량 1 차감
+        int currentSlot = _inventory != null ? _inventory.SelectedToolbarIndex : -1;
+        if (_inventory != null && currentSlot >= 0 && currentSlot < PlayerInventory.TOOLBAR_SIZE)
+        {
+            var slot = _inventory.ToolbarSlots[currentSlot];
+            if (!slot.IsEmpty)
+            {
+                slot.RemoveQuantity(1);
+                _inventory.NotifyInventoryChanged();
+
+                if (slot.IsEmpty)
+                {
+                    ClearHeldVisual();
+                    if (IsSpawned && IsOwner)
+                    {
+                        RequestSetHeldItemServerRpc(string.Empty);
+                    }
+                    if (GridBuildingController.Instance != null)
+                    {
+                        GridBuildingController.Instance.StopBuilding();
+                    }
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// 손에 든 미할당 아이템을 특정 번호키(toolbarIndex)의 툴바 슬롯에 넣습니다.
     /// 해당 번호 슬롯이 차 있다면 다음 빈 슬롯으로 순환하여 삽입하고,
     /// 모든 슬롯이 꽉 차 있다면 손에 든 아이템을 바닥에 그대로 떨어뜨립니다.
@@ -608,6 +685,9 @@ public class PlayerItemHolder : NetworkBehaviour
     private void RequestSetHeldItemServerRpc(string itemId)
     {
         _networkHeldItemId.Value = itemId;
+        ItemData itemData = string.IsNullOrEmpty(itemId) ? null : ItemDatabase.GetItem(itemId);
+        _currentHeldItemData = itemData;
+        NotifyCombatHeldItemChanged(itemData);
         SyncHeldItemClientRpc(itemId);
     }
 
@@ -652,6 +732,52 @@ public class PlayerItemHolder : NetworkBehaviour
 
         _networkHeldItemId.Value = string.Empty;
         SyncHeldItemClientRpc(string.Empty);
+    }
+
+    /// <summary>
+    /// 클라이언트에서 그리드 상에 건축물 설치를 서버에 요청합니다.
+    /// </summary>
+    public void RequestPlaceBuilding(string itemId, Vector2Int gridCoord, int rotationAngle)
+    {
+        if (IsSpawned)
+        {
+            RequestPlaceBuildingServerRpc(itemId, gridCoord, rotationAngle);
+        }
+        else
+        {
+            ItemData itemData = ItemDatabase.GetItem(itemId);
+            if (itemData != null && itemData.PlaceableBuildingPrefab != null && WorldGridManager.Instance != null)
+            {
+                WorldGridManager.Instance.TryPlaceObject(itemData.PlaceableBuildingPrefab, gridCoord, rotationAngle, out _);
+            }
+        }
+    }
+
+    [ServerRpc]
+    private void RequestPlaceBuildingServerRpc(string itemId, Vector2Int gridCoord, int rotationAngle)
+    {
+        ItemData itemData = ItemDatabase.GetItem(itemId);
+        if (itemData == null || itemData.PlaceableBuildingPrefab == null)
+        {
+            return;
+        }
+
+        if (WorldGridManager.Instance == null) return;
+
+        if (WorldGridManager.Instance.TryPlaceObject(itemData.PlaceableBuildingPrefab, gridCoord, rotationAngle, out PlaceableObject placedInstance))
+        {
+            Vector3 spawnPos = placedInstance.transform.position;
+            NotifyBuildingPlacedClientRpc(spawnPos);
+        }
+    }
+
+    [ClientRpc]
+    private void NotifyBuildingPlacedClientRpc(Vector3 spawnPos)
+    {
+        if (Coop.VFX.VfxPoolManager.Instance != null)
+        {
+            Coop.VFX.VfxPoolManager.Instance.SpawnImpact(Coop.VFX.SurfaceType.Stone, spawnPos + Vector3.up * 0.1f, Vector3.up);
+        }
     }
 
     #endregion

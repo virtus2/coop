@@ -41,6 +41,12 @@ public class PlayerInteraction : NetworkBehaviour
     private float _actionHoldTimer;
     private bool _isUsingItem;
 
+    [Header("Dismantle Settings")]
+    [SerializeField] private float _dismantleDuration = 1.2f;
+    [SerializeField] private float _dismantleMaxDistance = 3.5f;
+    private float _dismantleTimer = 0f;
+    private PlaceableObject _currentDismantleTarget;
+
     public Transform HoldPoint
     {
         get
@@ -72,6 +78,14 @@ public class PlayerInteraction : NetworkBehaviour
     {
         InitializeHoldPoint();
         if (_itemHolder == null) _itemHolder = GetComponent<PlayerItemHolder>();
+        if (GetComponent<PlayerGunCombat>() == null)
+        {
+            gameObject.AddComponent<PlayerGunCombat>();
+        }
+        if (GetComponent<PlayerMeleeCombat>() == null)
+        {
+            gameObject.AddComponent<PlayerMeleeCombat>();
+        }
     }
 
     private void Start()
@@ -248,6 +262,9 @@ public class PlayerInteraction : NetworkBehaviour
         // 들고 있는 아이템의 발사 및 홀드 사용 입력 처리
         HandleItemActionUpdate();
 
+        // 설치된 블록 F키 홀드 철거 처리
+        HandleDismantleUpdate();
+
         // 조준선 레이캐스트 업데이트
         UpdateAimRaycast();
     }
@@ -340,20 +357,16 @@ public class PlayerInteraction : NetworkBehaviour
             return;
         }
 
-        // 1. 내려놓기 단축키 (G키)
-        if (Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame)
+        // 1. 내려놓기 단축키 (Q키)
+        if (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
         {
             DropHeldItem();
             return;
         }
 
-        // 2. 발사 또는 사용 기능이 없는 일반 아이템(예: 기본 상자 등): 기존처럼 마우스 좌클릭 시 내려놓기 동작
+        // 2. 발사 또는 사용 기능이 없는 일반 아이템: 마우스 좌클릭으로 버리지 않으며 오직 Q키로만 투척 가능
         if (_fireableItem == null && _usableItem == null)
         {
-            if (WasAttackPressedThisFrame())
-            {
-                DropHeldItem();
-            }
             return;
         }
 
@@ -584,32 +597,51 @@ public class PlayerInteraction : NetworkBehaviour
 
         if (ItemHolder != null && ItemHolder.IsHoldingWorldItem)
         {
-            InteractionUI.Instance.ShowHeldHint("[1~0] 툴바 슬롯에 넣기 | [G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[1~0] 툴바 슬롯에 넣기 | [Q] 내려놓기");
             return;
         }
 
         if (currentData.ActionType == ItemActionType.Placeable || (heldInstance != null && heldInstance.GetComponent<PlaceableItem>() != null))
         {
             string name = currentData.PlaceableBuildingPrefab != null ? currentData.PlaceableBuildingPrefab.DisplayName : currentData.ItemName;
-            InteractionUI.Instance.ShowHeldHint($"[우클릭] {name} 설치 | [R] 회전 | [G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint($"[우클릭] {name} 설치 | [R] 회전 | [Q] 내려놓기");
+            return;
+        }
+
+        if (currentData.ActionType == ItemActionType.MeleeWeapon || currentData is MeleeItemData)
+        {
+            InteractionUI.Instance.ShowHeldHint("[좌클릭] 휘두르기 (홀드 시 연속 공격) | [Q] 내려놓기");
+            return;
+        }
+
+        if (currentData.ActionType == ItemActionType.Gun || currentData is GunItemData)
+        {
+            if (currentData is GunItemData gun && gun.FireMode == GunFireMode.Charge)
+            {
+                InteractionUI.Instance.ShowHeldHint("[좌클릭 홀드] 차징 발사 | [차징 중 우클릭] 취소 | [R] 재장전 | [Q] 내려놓기");
+            }
+            else
+            {
+                InteractionUI.Instance.ShowHeldHint("[좌클릭] 사격 | [R] 재장전 | [Q] 내려놓기");
+            }
             return;
         }
 
         if (_fireableItem != null && _usableItem != null)
         {
-            InteractionUI.Instance.ShowHeldHint("[좌클릭] 발사 | [좌클릭 홀드] 사용 | [G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[좌클릭] 발사 | [좌클릭 홀드] 사용 | [Q] 내려놓기");
         }
         else if (_fireableItem != null)
         {
-            InteractionUI.Instance.ShowHeldHint("[좌클릭] 발사 | [G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[좌클릭] 발사 | [Q] 내려놓기");
         }
         else if (_usableItem != null)
         {
-            InteractionUI.Instance.ShowHeldHint("[좌클릭 홀드] 사용 | [G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[좌클릭 홀드] 사용 | [Q] 내려놓기");
         }
         else
         {
-            InteractionUI.Instance.ShowHeldHint("[G] 내려놓기");
+            InteractionUI.Instance.ShowHeldHint("[Q] 내려놓기");
         }
     }
 
@@ -626,7 +658,13 @@ public class PlayerInteraction : NetworkBehaviour
             switch (itemData.ActionType)
             {
                 case ItemActionType.Gun:
-                    _fireableItem = _gunAction;
+                    // 총기 액션은 PlayerGunCombat이 전담하여 발사/장전/반동/차징을 처리합니다.
+                    _fireableItem = null;
+                    _usableItem = null;
+                    break;
+                case ItemActionType.MeleeWeapon:
+                    // 근접 무기 액션은 PlayerMeleeCombat이 전담하여 공격/넉백/히트를 처리합니다.
+                    _fireableItem = null;
                     _usableItem = null;
                     break;
                 case ItemActionType.Medkit:
@@ -642,7 +680,7 @@ public class PlayerInteraction : NetworkBehaviour
                     _usableItem = null;
                     if (GridBuildingController.Instance != null && itemData.PlaceableBuildingPrefab != null)
                     {
-                        GridBuildingController.Instance.StartBuilding(itemData.PlaceableBuildingPrefab);
+                        GridBuildingController.Instance.StartBuilding(itemData, ItemHolder);
                     }
                     break;
                 default:
@@ -651,10 +689,13 @@ public class PlayerInteraction : NetworkBehaviour
                     break;
             }
 
-            var placeableItem = heldInstance != null ? heldInstance.GetComponent<PlaceableItem>() : null;
-            if (placeableItem != null && GridBuildingController.Instance != null)
+            if (itemData.ActionType != ItemActionType.Placeable)
             {
-                GridBuildingController.Instance.StartBuilding(placeableItem);
+                var placeableItem = heldInstance != null ? heldInstance.GetComponent<PlaceableItem>() : null;
+                if (placeableItem != null && GridBuildingController.Instance != null)
+                {
+                    GridBuildingController.Instance.StartBuilding(placeableItem);
+                }
             }
         }
         else
@@ -713,6 +754,18 @@ public class PlayerInteraction : NetworkBehaviour
     /// </summary>
     public void DropHeldItem()
     {
+        // 근접 공격 모션 진행 중에는 드롭 불가 (E-05)
+        if (PlayerMeleeCombat.LocalInstance != null && PlayerMeleeCombat.LocalInstance.IsAttacking)
+        {
+            return;
+        }
+
+        if (PlayerGunCombat.LocalInstance != null)
+        {
+            PlayerGunCombat.LocalInstance.CancelCharge();
+            PlayerGunCombat.LocalInstance.CancelReload();
+        }
+
         if (!IsHoldingItem)
         {
             return;
@@ -745,6 +798,75 @@ public class PlayerInteraction : NetworkBehaviour
         if (ItemHolder != null)
         {
             ItemHolder.DropCurrentHeldItem(throwOrigin, throwRotation, throwVelocity);
+        }
+    }
+
+    /// <summary>
+    /// 손 상태와 무관하게 설치된 PlaceableObject를 바라보고 F키를 꾹(1.2초) 누르면 게이지가 차오르고 철거를 수행합니다.
+    /// </summary>
+    private void HandleDismantleUpdate()
+    {
+        if (_mainCamera == null)
+        {
+            return;
+        }
+
+        Ray ray = _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        PlaceableObject hitPlaceable = null;
+
+        if (Physics.Raycast(ray, out RaycastHit hit, _dismantleMaxDistance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            hitPlaceable = hit.collider.GetComponentInParent<PlaceableObject>();
+            if (hitPlaceable == null)
+            {
+                hitPlaceable = hit.collider.GetComponent<PlaceableObject>();
+            }
+        }
+
+        bool isFKeyPressed = Keyboard.current != null && Keyboard.current.fKey.isPressed;
+
+        if (hitPlaceable != null && isFKeyPressed)
+        {
+            if (_currentDismantleTarget != hitPlaceable)
+            {
+                _currentDismantleTarget = hitPlaceable;
+                _dismantleTimer = 0f;
+            }
+
+            _dismantleTimer += Time.deltaTime;
+            float progress = Mathf.Clamp01(_dismantleTimer / _dismantleDuration);
+
+            if (DismantleProgressUI.Instance != null)
+            {
+                DismantleProgressUI.Instance.SetProgress(progress, hitPlaceable.DisplayName);
+            }
+
+            if (_dismantleTimer >= _dismantleDuration)
+            {
+                var target = _currentDismantleTarget;
+                _currentDismantleTarget = null;
+                _dismantleTimer = 0f;
+
+                if (DismantleProgressUI.Instance != null)
+                {
+                    DismantleProgressUI.Instance.Hide();
+                }
+
+                target.Dismantle();
+            }
+        }
+        else
+        {
+            if (_dismantleTimer > 0f || _currentDismantleTarget != null)
+            {
+                _dismantleTimer = 0f;
+                _currentDismantleTarget = null;
+
+                if (DismantleProgressUI.Instance != null)
+                {
+                    DismantleProgressUI.Instance.Hide();
+                }
+            }
         }
     }
 }

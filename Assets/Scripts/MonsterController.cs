@@ -85,6 +85,15 @@ public class MonsterController : NonPlayerCharacter
             return;
         }
 
+        UpdateStagger(Time.deltaTime);
+        UpdateKnockback(Time.deltaTime);
+
+        if (IsStaggered)
+        {
+            StopMovement();
+            return;
+        }
+
         UpdateCooldowns();
         UpdateStateMachine();
     }
@@ -317,6 +326,42 @@ public class MonsterController : NonPlayerCharacter
                 transform.position += moveDelta;
             }
         }
+    }
+
+    private Vector3 _knockbackVelocity;
+
+    protected override void ApplyKnockback(Vector3 direction, float force)
+    {
+        if (!IsServer || IsDead) return;
+
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            direction.Normalize();
+            _knockbackVelocity = direction * force;
+        }
+    }
+
+    private void UpdateKnockback(float deltaTime)
+    {
+        if (_knockbackVelocity.sqrMagnitude <= 0.01f) return;
+
+        Vector3 moveDelta = _knockbackVelocity * deltaTime;
+        if (_characterController != null && _characterController.enabled)
+        {
+            _characterController.Move(moveDelta);
+        }
+        else if (_navMeshAgent != null && _navMeshAgent.enabled && _navMeshAgent.isOnNavMesh)
+        {
+            _navMeshAgent.Move(moveDelta);
+        }
+        else
+        {
+            transform.position += moveDelta;
+        }
+
+        // 지수 감쇠 (마찰력 적용)
+        _knockbackVelocity = Vector3.Lerp(_knockbackVelocity, Vector3.zero, 12f * deltaTime);
     }
 
     private void StopMovement()

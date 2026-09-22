@@ -246,6 +246,12 @@ public class PlayerInventory : NetworkBehaviour
     /// </summary>
     public void SelectToolbarSlot(int index)
     {
+        // 근접 공격 모션 진행 중에는 핫바 교체 불가 (E-04)
+        if (PlayerMeleeCombat.LocalInstance != null && PlayerMeleeCombat.LocalInstance.IsAttacking)
+        {
+            return;
+        }
+
         if (index < 0 || index >= TOOLBAR_SIZE)
         {
             index = -1;
@@ -577,6 +583,92 @@ public class PlayerInventory : NetworkBehaviour
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// 현재 선택된 툴바 슬롯을 반환합니다.
+    /// </summary>
+    public InventorySlot GetSelectedToolbarSlot()
+    {
+        EnsureInitialized();
+        if (_selectedToolbarIndex >= 0 && _selectedToolbarIndex < _toolbarSlots.Length)
+        {
+            return _toolbarSlots[_selectedToolbarIndex];
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 인벤토리(그리드 + 툴바) 전체에서 특정 아이템 ID를 가진 총 탄약 수량을 조회합니다.
+    /// </summary>
+    public int GetTotalAmmoCount(string ammoItemId)
+    {
+        if (string.IsNullOrEmpty(ammoItemId)) return 0;
+        EnsureInitialized();
+
+        int total = 0;
+        foreach (var slot in _gridSlots)
+        {
+            if (!slot.IsEmpty && slot.Item != null && slot.Item.ItemId == ammoItemId)
+            {
+                total += slot.Quantity;
+            }
+        }
+        foreach (var slot in _toolbarSlots)
+        {
+            if (!slot.IsEmpty && slot.Item != null && slot.Item.ItemId == ammoItemId)
+            {
+                total += slot.Quantity;
+            }
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// 특정 탄약 아이템을 지정 수량만큼 인벤토리에서 소모합니다.
+    /// 실제로 소모된 탄약 수량을 반환합니다.
+    /// </summary>
+    public int ConsumeAmmo(string ammoItemId, int amountToConsume)
+    {
+        if (string.IsNullOrEmpty(ammoItemId) || amountToConsume <= 0) return 0;
+        EnsureInitialized();
+
+        int remainingToConsume = amountToConsume;
+
+        // 1. 그리드 슬롯 먼저 소모
+        for (int i = 0; i < _gridSlots.Length; i++)
+        {
+            var slot = _gridSlots[i];
+            if (!slot.IsEmpty && slot.Item != null && slot.Item.ItemId == ammoItemId)
+            {
+                int removed = slot.RemoveQuantity(remainingToConsume);
+                remainingToConsume -= removed;
+                if (remainingToConsume <= 0) break;
+            }
+        }
+
+        // 2. 툴바 슬롯 소모
+        if (remainingToConsume > 0)
+        {
+            for (int i = 0; i < _toolbarSlots.Length; i++)
+            {
+                var slot = _toolbarSlots[i];
+                if (!slot.IsEmpty && slot.Item != null && slot.Item.ItemId == ammoItemId)
+                {
+                    int removed = slot.RemoveQuantity(remainingToConsume);
+                    remainingToConsume -= removed;
+                    if (remainingToConsume <= 0) break;
+                }
+            }
+        }
+
+        int totalConsumed = amountToConsume - remainingToConsume;
+        if (totalConsumed > 0)
+        {
+            OnInventoryChanged?.Invoke();
+        }
+
+        return totalConsumed;
     }
 
     /// <summary>

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3435798893ed4a49838467ae91f5398, type: 3}
+  m_Name: Ammo_Energy
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  _itemId: Ammo_Energy
+  _itemName: "\uC5D0\uB108\uC9C0 \uC140"
+  _icon: {fileID: 0}
+  _description: "\uCC28\uC9D5 \uB808\uC774\uC800 \uCD1D\uAE30\uC5D0 \uC0AC\uC6A9\uB418\uB294
+    \uACE0\uBC00\uB3C4 \uC5D0\uB108\uC9C0 \uC140\uC785\uB2C8\uB2E4."
+  _maxStackSize: 50
+  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMaterial: {fileID: 2100000, guid: 94971fae821686345a87f5bbde45a95d, type: 2}
+  _heldLocalPosition: {x: 0, y: 0, z: 0}
+  _heldLocalRotation: {x: 0, y: 0, z: 0}
+  _heldLocalScale: {x: 1, y: 1, z: 1}
+  _actionType: 0
+  _placeableBuildingPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 0}

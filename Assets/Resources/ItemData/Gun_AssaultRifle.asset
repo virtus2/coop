@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dab0cbdcdf83c643a8e91400310fd76, type: 3}
+  m_Name: Gun_AssaultRifle
+  m_EditorClassIdentifier: Assembly-CSharp::GunItemData
+  _itemId: Gun_AssaultRifle
+  _itemName: "\uB3CC\uACA9 \uC18C\uCD1D"
+  _icon: {fileID: 0}
+  _description: "\uB9C8\uC6B0\uC2A4 \uD640\uB4DC \uC2DC \uBE60\uB978 \uC5F0\uC0AC\uAC00
+    \uAC00\uB2A5\uD55C \uAE30\uBCF8 \uC81C\uC2DD \uC18C\uCD1D\uC785\uB2C8\uB2E4."
+  _maxStackSize: 1
+  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMaterial: {fileID: 2100000, guid: 94971fae821686345a87f5bbde45a95d, type: 2}
+  _heldLocalPosition: {x: 0, y: -0.064, z: 0.045}
+  _heldLocalRotation: {x: 0, y: 0, z: 0}
+  _heldLocalScale: {x: 0.1, y: 0.1, z: 1}
+  _actionType: 1
+  _placeableBuildingPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 0}
+  _baseDamage: 25
+  _fireInterval: 0.12
+  _maxRange: 100
+  _fireMode: 1
+  _minChargeDuration: 1
+  _chargedDamageMultiplier: 2
+  _magazineCapacity: 30
+  _reloadDuration: 2
+  _requiredAmmoItemId: Ammo_Rifle
+  _recoilPitch: 1.4
+  _recoilYaw: 0.3
+  _recoilRecoverySpeed: 10
+  _sprintToFireDelay: 0.18
+  _shootingMovementMultiplier: 0.75
+  _fireSound: {fileID: 0}
+  _dryFireSound: {fileID: 0}
+  _reloadSound: {fileID: 0}
+  _chargeStartSound: {fileID: 0}
+  _chargeReadySound: {fileID: 0}
+  _muzzleFlashPrefab: {fileID: 0}
+  _bulletTracerPrefab: {fileID: 0}
+  _impactEffectPrefab: {fileID: 0}

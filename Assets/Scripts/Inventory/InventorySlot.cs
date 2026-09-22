@@ -64,23 +64,30 @@ public class InventorySlot
 {
     [SerializeField] private ItemData _item;
     [SerializeField] private int _quantity;
+    [SerializeField] private int _currentAmmo = -1;
 
     public ItemData Item => _item;
     public int Quantity => _quantity;
+    public int CurrentAmmo
+    {
+        get => _currentAmmo;
+        set => _currentAmmo = value;
+    }
     public bool IsEmpty => _item == null || _quantity <= 0;
 
     public InventorySlot()
     {
         _item = null;
         _quantity = 0;
+        _currentAmmo = -1;
     }
 
-    public InventorySlot(ItemData item, int quantity)
+    public InventorySlot(ItemData item, int quantity, int currentAmmo = -1)
     {
-        Set(item, quantity);
+        Set(item, quantity, currentAmmo);
     }
 
-    public void Set(ItemData item, int quantity)
+    public void Set(ItemData item, int quantity, int currentAmmo = -1)
     {
         if (item == null || quantity <= 0)
         {
@@ -90,12 +97,40 @@ public class InventorySlot
 
         _item = item;
         _quantity = Mathf.Clamp(quantity, 1, item.MaxStackSize);
+
+        if (currentAmmo >= 0)
+        {
+            _currentAmmo = currentAmmo;
+        }
+        else if (item is GunItemData gunData)
+        {
+            // 총기 아이템이 새로 인벤토리에 들어올 때 탄창 완충 상태로 초기화
+            _currentAmmo = gunData.MagazineCapacity;
+        }
+        else
+        {
+            _currentAmmo = -1;
+        }
+    }
+
+    public void CopyFrom(InventorySlot other)
+    {
+        if (other == null || other.IsEmpty)
+        {
+            Clear();
+            return;
+        }
+
+        _item = other.Item;
+        _quantity = other.Quantity;
+        _currentAmmo = other.CurrentAmmo;
     }
 
     public void Clear()
     {
         _item = null;
         _quantity = 0;
+        _currentAmmo = -1;
     }
 
     public int AddQuantity(int amount)

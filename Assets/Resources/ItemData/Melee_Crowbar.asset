@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb9ef20ba48fca24abfd82926c0bc769, type: 3}
+  m_Name: Melee_Crowbar
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeItemData
+  _itemId: Melee_Crowbar
+  _itemName: "\uC1E0\uC9C0\uB81B\uB300"
+  _icon: {fileID: 0}
+  _description: "\uAC15\uB825\uD55C \uD0C0\uACA9\uB825\uACFC \uB109\uBC31\uC744 \uC9C0\uB2CC
+    \uD45C\uC900 \uADFC\uC811 \uBB34\uAE30\uC785\uB2C8\uB2E4. \uB9C8\uC6B0\uC2A4
+    \uC88C\uD074\uB9AD \uD640\uB4DC \uC2DC \uC5F0\uC18D \uACF5\uACA9\uC774 \uAC00\uB2A5\uD569\uB2C8\uB2E4."
+  _maxStackSize: 1
+  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMaterial: {fileID: 2100000, guid: 97e1cea5a52806549afc460134833e72, type: 2}
+  _heldLocalPosition: {x: 0, y: 0.234, z: 0}
+  _heldLocalRotation: {x: 0, y: 0, z: 0}
+  _heldLocalScale: {x: 0.1, y: 0.7, z: 0.1}
+  _actionType: 5
+  _placeableBuildingPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 0}
+  _baseDamage: 35
+  _attackInterval: 0.6
+  _windupDuration: 0.18
+  _recoveryDuration: 0.35
+  _attackRange: 2.2
+  _attackRadius: 0.35
+  _knockbackForce: 5.5
+  _movementPenaltyMultiplier: 0.5
+  _swingSound: {fileID: 0}
+  _hitFleshSound: {fileID: 0}
+  _hitObjectSound: {fileID: 0}
+  _hitWallSound: {fileID: 0}
+  _impactEffectPrefab: {fileID: 0}

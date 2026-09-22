@@ -337,6 +337,8 @@ GameObject:
   - component: {fileID: 1493050835772267033}
   - component: {fileID: 8702420973429685119}
   - component: {fileID: 2187705669790487200}
+  - component: {fileID: 899389255943947349}
+  - component: {fileID: -64933421352446791}
   m_Layer: 7
   m_Name: PlayerPrefab
   m_TagString: Untagged
@@ -449,6 +451,15 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _moveSpeed: 5
   _gravity: -9.81
+  _sprintSpeedMultiplier: 1.75
+  _accelerationTime: 0.4
+  _decelerationTime: 0.3
+  _maxStamina: 7
+  _staminaRegenDelay: 1.5
+  _staminaRegenRate: 1.75
+  _exhaustionRecoveryThreshold: 1.4
+  _sprintFovOffset: 8
+  _fovTransitionSpeed: 6
   _mouseSensitivity: 0.1
   _topClamp: 80
   _bottomClamp: -80
@@ -460,6 +471,7 @@ MonoBehaviour:
   _bodyRenderer: {fileID: 100637185518681515}
   _moveActionReference: {fileID: 0}
   _lookActionReference: {fileID: 0}
+  _sprintActionReference: {fileID: 0}
   _inputActionsAsset: {fileID: 0}
 --- !u!143 &215129876427366526
 CharacterController:
@@ -510,6 +522,8 @@ MonoBehaviour:
   _attackActionReference: {fileID: 0}
   _inputActionsAsset: {fileID: 0}
   _holdThreshold: 0.25
+  _dismantleDuration: 1.2
+  _dismantleMaxDistance: 3.5
 --- !u!114 &2200000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -596,10 +610,12 @@ MonoBehaviour:
   _gridWidth: 5
   _gridHeight: 4
   _initialItems:
-  - {fileID: 11400000, guid: 7ab8f0b5486960a48af56be350167c5a, type: 2}
-  - {fileID: 11400000, guid: 984057d132687c247bc1ab2f7da5b699, type: 2}
-  - {fileID: 11400000, guid: 16306e47a8be7b446b1f50a6137e9c26, type: 2}
-  - {fileID: 11400000, guid: fbc8fff87e3622c4789ba5d21150e23e, type: 2}
+  - {fileID: 11400000, guid: 1e0389255ddd0744b98380862bd560e1, type: 2}
+  - {fileID: 11400000, guid: 0509a320c9738b640848995e0cbb66f2, type: 2}
+  - {fileID: 11400000, guid: d943bed0e60c8924397013d99b6cf1cb, type: 2}
+  - {fileID: 11400000, guid: d885cb5470d2a9b4db433073bbe0d595, type: 2}
+  - {fileID: 11400000, guid: 196b42818dfdab543bb095145b038e86, type: 2}
+  - {fileID: 11400000, guid: f293c0231d5750b40b4e222e36271625, type: 2}
   _selectedToolbarIndex: 0
 --- !u!114 &2187705669790487200
 MonoBehaviour:
@@ -614,6 +630,42 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerItemHolder
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &899389255943947349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f2224bd520a8fe4ca75df6585ffcbc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerGunCombat
+  ShowTopMostFoldoutHeaderGroup: 1
+  _playerController: {fileID: 0}
+  _playerInventory: {fileID: 0}
+  _playerItemHolder: {fileID: 0}
+  _playerInteraction: {fileID: 0}
+  _defaultImpactEffectPrefab: {fileID: 0}
+  _autoEquipGunsOnStart: 1
+--- !u!114 &-64933421352446791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3580515817915809303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28f51934ef16b6e45ae7a9fd992c0434, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMeleeCombat
+  ShowTopMostFoldoutHeaderGroup: 1
+  _playerController: {fileID: 0}
+  _playerInventory: {fileID: 0}
+  _playerItemHolder: {fileID: 0}
+  _playerInteraction: {fileID: 0}
 --- !u!1 &4416810848816386381
 GameObject:
   m_ObjectHideFlags: 0

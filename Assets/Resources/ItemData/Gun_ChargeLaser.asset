@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dab0cbdcdf83c643a8e91400310fd76, type: 3}
+  m_Name: Gun_ChargeLaser
+  m_EditorClassIdentifier: Assembly-CSharp::GunItemData
+  _itemId: Gun_ChargeLaser
+  _itemName: "\uCC28\uC9C0 \uB808\uC774\uC800 \uB77C\uC774\uD50C"
+  _icon: {fileID: 0}
+  _description: "\uC88C\uD074\uB9AD \uD640\uB4DC\uB85C \uC5D0\uB108\uC9C0\uB97C \uBAA8\uC544
+    \uB5C4 \uB54C \uAC15\uB825\uD55C \uBE54\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4.
+    (\uC6B0\uD074\uB9AD \uCDE8\uC18C \uAC00\uB2A5)"
+  _maxStackSize: 1
+  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMaterial: {fileID: 2100000, guid: 94971fae821686345a87f5bbde45a95d, type: 2}
+  _heldLocalPosition: {x: 0, y: 0, z: 0.699}
+  _heldLocalRotation: {x: 0, y: 0, z: 0}
+  _heldLocalScale: {x: 0.1, y: 0.1, z: 2}
+  _actionType: 1
+  _placeableBuildingPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 0}
+  _baseDamage: 40
+  _fireInterval: 0.4
+  _maxRange: 100
+  _fireMode: 2
+  _minChargeDuration: 1
+  _chargedDamageMultiplier: 2
+  _magazineCapacity: 10
+  _reloadDuration: 2.5
+  _requiredAmmoItemId: Ammo_Energy
+  _recoilPitch: 2.2
+  _recoilYaw: 0.4
+  _recoilRecoverySpeed: 8
+  _sprintToFireDelay: 0.18
+  _shootingMovementMultiplier: 0.75
+  _fireSound: {fileID: 0}
+  _dryFireSound: {fileID: 0}
+  _reloadSound: {fileID: 0}
+  _chargeStartSound: {fileID: 0}
+  _chargeReadySound: {fileID: 0}
+  _muzzleFlashPrefab: {fileID: 0}
+  _bulletTracerPrefab: {fileID: 0}
+  _impactEffectPrefab: {fileID: 0}

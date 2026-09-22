@@ -18,11 +18,26 @@ using UnityEngine;
 ///      플레이어 전용 로직(PlayerController, 카메라 부착, 플레이어 입력, HUD 등)에 관여하지 않습니다.
 /// </summary>
 [DisallowMultipleComponent]
-public abstract class NonPlayerCharacter : NetworkBehaviour
+public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
 {
     [Header("Base Character Settings")]
     [SerializeField] private string _defaultName = "NonPlayerCharacter";
     [SerializeField] private int _maxHealth = 100;
+
+    [Header("Stagger Settings (피격 경직 및 무한 스턴 방지)")]
+    [Tooltip("피격 시 기본 경직 시간(초)")]
+    [SerializeField] private float _baseStaggerDuration = 0.35f;
+    [Tooltip("단시간 연속 피격 시 경직 시간 감소 배율 (0.25면 매 피격마다 25%씩 감소)")]
+    [SerializeField] private float _staggerDiminishFactor = 0.25f;
+    [Tooltip("피격이 없을 때 경직 내성이 초기화되는 대기 시간(초)")]
+    [SerializeField] private float _staggerResetDelay = 2.0f;
+
+    private float _currentStaggerTimer;
+    private int _consecutiveStaggerCount;
+    private float _staggerResetTimer;
+
+    public bool IsStaggered => _currentStaggerTimer > 0f;
+    public float CurrentStaggerTimer => _currentStaggerTimer;
 
     [Header("Despawn Settings")]
     [SerializeField] private bool _autoDespawnOnDeath = true;
@@ -146,6 +161,36 @@ public abstract class NonPlayerCharacter : NetworkBehaviour
     }
 
     /// <summary>
+    /// IDamageable 인터페이스 구현. 피격 정보(헤드샷, 차지 여부 등)를 포함하여 데미지를 적용합니다.
+    /// </summary>
+    public virtual void TakeDamage(DamageInfo damageInfo)
+    {
+        if (!IsServer || IsDead || damageInfo.Amount <= 0)
+        {
+            return;
+        }
+
+        TakeDamage(damageInfo.Amount, damageInfo.InstigatorClientId);
+
+        // 피격 경직(Stagger) 적용
+        ApplyStagger();
+
+        // 피격 넉백(Knockback) 적용
+        if (damageInfo.KnockbackForce > 0f && damageInfo.KnockbackDirection != Vector3.zero)
+        {
+            ApplyKnockback(damageInfo.KnockbackDirection, damageInfo.KnockbackForce);
+        }
+    }
+
+    /// <summary>
+    /// 피격 시 넉백 물리력을 적용합니다. 서버 권한(Server-Authoritative)으로 동작합니다.
+    /// </summary>
+    protected virtual void ApplyKnockback(Vector3 direction, float force)
+    {
+        // 베이스 클래스에서는 기본 빈 구현 (구체적인 이동 컴포넌트에 맞춰 서브클래스에서 구현)
+    }
+
+    /// <summary>
     /// 데미지를 입히는 메서드입니다. 서버 권한(Server-Authoritative)으로 동작합니다.
     /// </summary>
     /// <param name="damage">입힐 데미지 양</param>
@@ -173,6 +218,57 @@ public abstract class NonPlayerCharacter : NetworkBehaviour
         {
             HandleDeath();
         }
+    }
+
+    /// <summary>
+    /// 점감 법칙(Diminishing Returns)을 적용하여 경직 시간을 계산하고 부여합니다.
+    /// </summary>
+    protected virtual void ApplyStagger()
+    {
+        if (!IsServer || IsDead) return;
+
+        // 점감 배율 계산: 1회차 100%, 2회차 75%, 3회차 50% ... 최소 10%
+        float multiplier = Mathf.Max(0.1f, 1.0f - (_consecutiveStaggerCount * _staggerDiminishFactor));
+        float calculatedDuration = _baseStaggerDuration * multiplier;
+
+        _currentStaggerTimer = Mathf.Max(_currentStaggerTimer, calculatedDuration);
+        _consecutiveStaggerCount++;
+        _staggerResetTimer = _staggerResetDelay;
+
+        NotifyStaggeredClientRpc(calculatedDuration);
+    }
+
+    /// <summary>
+    /// 서버 프레임마다 경직 타이머와 점감 초기화 타이머를 갱신합니다.
+    /// </summary>
+    protected virtual void UpdateStagger(float deltaTime)
+    {
+        if (!IsServer) return;
+
+        if (_currentStaggerTimer > 0f)
+        {
+            _currentStaggerTimer -= deltaTime;
+            if (_currentStaggerTimer <= 0f)
+            {
+                _currentStaggerTimer = 0f;
+            }
+        }
+
+        if (_staggerResetTimer > 0f)
+        {
+            _staggerResetTimer -= deltaTime;
+            if (_staggerResetTimer <= 0f)
+            {
+                // 일정 시간 동안 추가 피격이 없었으므로 점감 카운트 리셋
+                _consecutiveStaggerCount = 0;
+            }
+        }
+    }
+
+    [ClientRpc]
+    private void NotifyStaggeredClientRpc(float duration)
+    {
+        // 클라이언트 측 피격 경직 애니메이션/사운드 트리거용
     }
 
     [ClientRpc]

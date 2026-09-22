@@ -17,6 +17,28 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float _moveSpeed = 5f;
     [SerializeField] private float _gravity = -9.81f;
 
+    [Header("Sprint & Stamina Settings")]
+    [Tooltip("달리기 속도 배율 (기본 이동 속도 대비, 기본값: 1.75배)")]
+    [SerializeField] private float _sprintSpeedMultiplier = 1.75f;
+    [Tooltip("달리기 최대 속도까지 부드럽게 가속되는 데 걸리는 시간(초)")]
+    [SerializeField] private float _accelerationTime = 0.4f;
+    [Tooltip("걷기 속도로 부드럽게 감속되는 데 걸리는 시간(초)")]
+    [SerializeField] private float _decelerationTime = 0.3f;
+    [Tooltip("달릴 수 있는 최대 스태미나 시간(초, 기본값: 7초)")]
+    [SerializeField] private float _maxStamina = 7f;
+    [Tooltip("달리기를 멈춘 후 스태미나 회복이 시작될 때까지의 대기 시간(초)")]
+    [SerializeField] private float _staminaRegenDelay = 1.5f;
+    [Tooltip("초당 스태미나 회복량 (약 4초에 걸쳐 완충)")]
+    [SerializeField] private float _staminaRegenRate = 1.75f;
+    [Tooltip("탈진 후 다시 달리기 위해 필요한 최소 스태미나")]
+    [SerializeField] private float _exhaustionRecoveryThreshold = 1.4f;
+
+    [Header("Camera FOV Settings")]
+    [Tooltip("달릴 때 증가할 카메라 FOV 오프셋")]
+    [SerializeField] private float _sprintFovOffset = 8f;
+    [Tooltip("카메라 FOV 보간 속도")]
+    [SerializeField] private float _fovTransitionSpeed = 6f;
+
     [Header("Look / Camera Settings")]
     [SerializeField] private float _mouseSensitivity = 0.1f;
     [SerializeField] private float _topClamp = 80f;
@@ -37,6 +59,8 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private InputActionReference _moveActionReference;
     [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Look'을 자동으로 로드합니다.")]
     [SerializeField] private InputActionReference _lookActionReference;
+    [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Sprint'를 자동으로 로드합니다.")]
+    [SerializeField] private InputActionReference _sprintActionReference;
 
     [Header("Input Asset Fallback")]
     [SerializeField] private InputActionAsset _inputActionsAsset;
@@ -45,9 +69,25 @@ public class PlayerController : NetworkBehaviour
     private ClientNetworkTransform _clientNetworkTransform;
     private InputAction _moveAction;
     private InputAction _lookAction;
+    private InputAction _sprintAction;
     private Vector3 _velocity;
     private float _cameraPitch;
     private bool _isInputEnabled = true;
+
+    // 달리기 및 스태미나 제어 변수
+    private float _currentSpeed;
+    private float _currentStamina;
+    private float _staminaDelayTimer;
+    private bool _isExhausted;
+    private bool _isSprinting;
+
+    // 카메라 FOV 제어 변수
+    private float _baseFov;
+    private bool _isBaseFovCached;
+
+    public bool IsSprinting => _isSprinting;
+    public float CurrentStamina => _currentStamina;
+    public float MaxStamina => _maxStamina;
 
     private readonly NetworkVariable<float> _networkCameraPitch = new NetworkVariable<float>(
         0f,
@@ -151,6 +191,15 @@ public class PlayerController : NetworkBehaviour
                     _bodyRenderer = capsule.GetComponent<Renderer>();
                 }
             }
+        }
+
+        _currentSpeed = _moveSpeed;
+        _currentStamina = _maxStamina;
+
+        if (_firstPersonCamera != null)
+        {
+            _baseFov = _firstPersonCamera.Lens.FieldOfView;
+            _isBaseFovCached = true;
         }
     }
 
@@ -259,6 +308,7 @@ public class PlayerController : NetworkBehaviour
 
             _moveAction?.Disable();
             _lookAction?.Disable();
+            _sprintAction?.Disable();
 
             // 커서 원상복구
             Cursor.lockState = CursorLockMode.None;
@@ -336,6 +386,25 @@ public class PlayerController : NetworkBehaviour
         {
             Debug.LogError("[PlayerController] 'Player/Look' InputAction을 찾을 수 없습니다.");
         }
+
+        // Sprint Action
+        if (_sprintActionReference != null && _sprintActionReference.action != null)
+        {
+            _sprintAction = _sprintActionReference.action;
+        }
+        else if (_inputActionsAsset != null)
+        {
+            _sprintAction = _inputActionsAsset.FindAction("Player/Sprint");
+        }
+
+        if (_sprintAction != null)
+        {
+            _sprintAction.Enable();
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerController] 'Player/Sprint' InputAction을 찾을 수 없습니다.");
+        }
     }
 
     /// <summary>
@@ -361,6 +430,8 @@ public class PlayerController : NetworkBehaviour
 
         HandleLook();
         HandleMovement();
+        UpdateStamina();
+        UpdateCameraFov();
     }
 
     /// <summary>
@@ -381,6 +452,24 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    // --- 반동(Recoil) 및 자동 복구 상태 변수 ---
+    private float _recoilPitchOffset;
+    private float _recoilYawOffset;
+    private float _recoilRecoverySpeed = 10f;
+
+    /// <summary>
+    /// 총기 격발 시 화면 반동을 부여합니다.
+    /// </summary>
+    /// <param name="pitchKick">상단으로 튕길 각도</param>
+    /// <param name="yawKick">좌우 랜덤 튕김 범위</param>
+    /// <param name="recoverySpeed">원래 에임으로 복귀하는 속도</param>
+    public void ApplyRecoil(float pitchKick, float yawKick, float recoverySpeed = 10f)
+    {
+        _recoilPitchOffset += pitchKick;
+        _recoilYawOffset += UnityEngine.Random.Range(-yawKick, yawKick);
+        _recoilRecoverySpeed = recoverySpeed;
+    }
+
     private void HandleLook()
     {
         Vector2 lookVector = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
@@ -396,20 +485,58 @@ public class PlayerController : NetworkBehaviour
         _cameraPitch -= mouseY;
         _cameraPitch = Mathf.Clamp(_cameraPitch, _bottomClamp, _topClamp);
 
+        // 3. 반동 복구 (Recoil Recovery - 부드럽게 0으로 수렴)
+        if (_recoilPitchOffset > 0f)
+        {
+            _recoilPitchOffset = Mathf.MoveTowards(_recoilPitchOffset, 0f, _recoilRecoverySpeed * Time.deltaTime);
+        }
+        if (Mathf.Abs(_recoilYawOffset) > 0f)
+        {
+            _recoilYawOffset = Mathf.MoveTowards(_recoilYawOffset, 0f, _recoilRecoverySpeed * Time.deltaTime);
+        }
+
+        // 반동 오프셋이 적용된 실제 카메라 조준 각도
+        float finalCameraPitch = Mathf.Clamp(_cameraPitch - _recoilPitchOffset, _bottomClamp, _topClamp);
+
         if (_cameraTarget != null)
         {
-            _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+            _cameraTarget.localRotation = Quaternion.Euler(finalCameraPitch, _recoilYawOffset, 0f);
         }
 
         if (_headTransform != null)
         {
-            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
+            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(finalCameraPitch), 0f, 0f);
         }
 
         if (IsSpawned && IsOwner && Mathf.Abs(_networkCameraPitch.Value - _cameraPitch) > 0.05f)
         {
             _networkCameraPitch.Value = _cameraPitch;
         }
+    }
+
+    // 사격 페널티 및 스프린트 중단 제어 변수
+    private float _sprintInterruptTimer;
+    private float _shootingPenaltyTimer;
+    private float _shootingPenaltyMultiplier = 1.0f;
+
+    public bool IsSprintPressed => _sprintAction != null && _sprintAction.IsPressed();
+
+    /// <summary>
+    /// 사격 또는 재장전 시 전력 질주(달리기)를 즉시 중단합니다.
+    /// </summary>
+    public void CancelSprint(float blockDuration = 0.15f)
+    {
+        _isSprinting = false;
+        _sprintInterruptTimer = Mathf.Max(_sprintInterruptTimer, blockDuration);
+    }
+
+    /// <summary>
+    /// 사격 중 이동 속도 감속 페널티를 부여합니다.
+    /// </summary>
+    public void ApplyShootingPenalty(float multiplier, float duration)
+    {
+        _shootingPenaltyMultiplier = multiplier;
+        _shootingPenaltyTimer = Mathf.Max(_shootingPenaltyTimer, duration);
     }
 
     private void HandleMovement()
@@ -424,8 +551,36 @@ public class PlayerController : NetworkBehaviour
             moveDirection.Normalize();
         }
 
-        // 수평 이동
-        Vector3 motion = moveDirection * (_moveSpeed * Time.deltaTime);
+        if (_sprintInterruptTimer > 0f)
+        {
+            _sprintInterruptTimer -= Time.deltaTime;
+        }
+
+        if (_shootingPenaltyTimer > 0f)
+        {
+            _shootingPenaltyTimer -= Time.deltaTime;
+        }
+
+        // 1. 달리기 조건 체크: 전진 입력(y > 0.1f) + Sprint 키 홀드 + 탈진 상태 아님 + 스태미나 잔여 + 사격 인터럽트 없음
+        bool isMovingForward = inputVector.y > 0.1f;
+        bool isSprintPressed = _sprintAction != null && _sprintAction.IsPressed();
+        bool canSprint = isMovingForward && isSprintPressed && !_isExhausted && _currentStamina > 0f && inputVector.sqrMagnitude > 0.01f && _sprintInterruptTimer <= 0f;
+
+        _isSprinting = canSprint;
+
+        // 2. 목표 속도 및 가속/감속 보간 (사격 페널티 배율 반영)
+        float currentBaseSpeed = _moveSpeed * (_shootingPenaltyTimer > 0f ? _shootingPenaltyMultiplier : 1.0f);
+        float maxSprintSpeed = currentBaseSpeed * _sprintSpeedMultiplier;
+        float targetSpeed = _isSprinting ? maxSprintSpeed : currentBaseSpeed;
+        float speedDelta = maxSprintSpeed - _moveSpeed;
+        float accelRate = (_currentSpeed < targetSpeed)
+            ? (speedDelta / Mathf.Max(0.01f, _accelerationTime))
+            : (speedDelta / Mathf.Max(0.01f, _decelerationTime));
+
+        _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, accelRate * Time.deltaTime);
+
+        // 3. 수평 이동
+        Vector3 motion = moveDirection * (_currentSpeed * Time.deltaTime);
 
         // 지면 접지 및 중력 계산
         if (_characterController.isGrounded && _velocity.y < 0f)
@@ -437,6 +592,71 @@ public class PlayerController : NetworkBehaviour
         motion.y = _velocity.y * Time.deltaTime;
 
         _characterController.Move(motion);
+    }
+
+    /// <summary>
+    /// 달리기 중 스태미나 소모(7초) 및 정지 후 1.5초 대기 후 회복을 처리합니다.
+    /// </summary>
+    private void UpdateStamina()
+    {
+        if (_isSprinting)
+        {
+            // 달리는 중: 스태미나 초당 1f 소모 (기본 7초 동안 지속 가능)
+            _currentStamina -= Time.deltaTime;
+            _staminaDelayTimer = 0f;
+
+            if (_currentStamina <= 0f)
+            {
+                _currentStamina = 0f;
+                _isExhausted = true;
+                _isSprinting = false;
+            }
+        }
+        else
+        {
+            // 달리지 않는 중: 1.5초 대기 후 서서히 회복
+            if (_staminaDelayTimer < _staminaRegenDelay)
+            {
+                _staminaDelayTimer += Time.deltaTime;
+            }
+            else
+            {
+                if (_currentStamina < _maxStamina)
+                {
+                    _currentStamina = Mathf.MoveTowards(_currentStamina, _maxStamina, _staminaRegenRate * Time.deltaTime);
+                }
+
+                // 탈진 상태 해제 (최소 임계치 이상 회복 시)
+                if (_isExhausted && _currentStamina >= _exhaustionRecoveryThreshold)
+                {
+                    _isExhausted = false;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 달리기 상태에 따라 1인칭 카메라의 FOV를 부드럽게 조정합니다.
+    /// </summary>
+    private void UpdateCameraFov()
+    {
+        if (_firstPersonCamera == null)
+        {
+            return;
+        }
+
+        if (!_isBaseFovCached)
+        {
+            _baseFov = _firstPersonCamera.Lens.FieldOfView;
+            _isBaseFovCached = true;
+        }
+
+        float targetFov = _isSprinting ? (_baseFov + _sprintFovOffset) : _baseFov;
+        _firstPersonCamera.Lens.FieldOfView = Mathf.Lerp(
+            _firstPersonCamera.Lens.FieldOfView,
+            targetFov,
+            Time.deltaTime * _fovTransitionSpeed
+        );
     }
 
     /// <summary>

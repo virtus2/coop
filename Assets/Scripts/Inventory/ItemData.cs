@@ -9,7 +9,8 @@ public enum ItemActionType
     Gun = 1,
     Medkit = 2,
     ChargedWeapon = 3,
-    Placeable = 4
+    Placeable = 4,
+    MeleeWeapon = 5
 }
 
 /// <summary>

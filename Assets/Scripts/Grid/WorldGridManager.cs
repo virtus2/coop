@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
@@ -228,6 +229,19 @@ public class WorldGridManager : MonoBehaviour
             return false;
         }
 
+        // 4. 금지 구역(NoBuildArea) 내 위치 여부 체크
+        Vector2Int effectiveSize = placeable.GetRotatedSize(rotationAngle);
+        Vector3 blockCenter = GridOrigin + new Vector3(
+            (originCoord.x + effectiveSize.x * 0.5f) * _cellSize,
+            1.0f,
+            (originCoord.y + effectiveSize.y * 0.5f) * _cellSize
+        );
+        Vector3 blockExtents = new Vector3(effectiveSize.x * _cellSize * 0.5f, 1.0f, effectiveSize.y * _cellSize * 0.5f);
+        if (NoBuildArea.IsInAnyNoBuildArea(blockCenter, blockExtents, out _))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -316,9 +330,64 @@ public class WorldGridManager : MonoBehaviour
         Quaternion rotation = Quaternion.Euler(0f, PlaceableObject.NormalizeRotationAngle(rotationAngle), 0f);
         placedInstance = Instantiate(prefab, worldSpawnPos, rotation, transform);
 
+        // 멀티플레이어 환경일 경우 서버 권한으로 스폰
+        var netObj = placedInstance.GetComponent<NetworkObject>();
+        if (netObj != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            netObj.Spawn(true);
+        }
+
         // 점유 등록
         RegisterPlacement(placedInstance, originCoord, rotationAngle);
+
+        // 설치 순간 영역에 걸친 캐릭터를 안전하게 바깥으로 살짝 밀어냄 (끼임 방지)
+        Vector3 pushCenter = worldSpawnPos + new Vector3(0f, 1f, 0f);
+        Vector3 pushExtents = new Vector3(effectiveSize.x * _cellSize * 0.55f, 1.2f, effectiveSize.y * _cellSize * 0.55f);
+        PushCharactersOutOfArea(pushCenter, pushExtents);
+
         return true;
+    }
+
+    /// <summary>
+    /// 설치 완료 시 블록 콜라이더 내에 겹친 캐릭터(플레이어/몬스터)를 안전하게 바깥으로 밀어내어 끼임(Stuck)을 방지합니다.
+    /// </summary>
+    private void PushCharactersOutOfArea(Vector3 center, Vector3 extents)
+    {
+        Collider[] colliders = Physics.OverlapBox(center, extents, Quaternion.identity, _characterLayerMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider col = colliders[i];
+            if (col == null || col.GetComponentInParent<PlaceableObject>() != null)
+            {
+                continue;
+            }
+
+            CharacterController cc = col.GetComponentInParent<CharacterController>();
+            if (cc != null)
+            {
+                Vector3 pushDir = cc.transform.position - center;
+                pushDir.y = 0f;
+                if (pushDir.sqrMagnitude < 0.001f)
+                {
+                    pushDir = Vector3.forward;
+                }
+                cc.Move(pushDir.normalized * 0.75f);
+            }
+            else
+            {
+                Rigidbody rb = col.GetComponentInParent<Rigidbody>();
+                if (rb != null && !rb.isKinematic)
+                {
+                    Vector3 pushDir = rb.position - center;
+                    pushDir.y = 0f;
+                    if (pushDir.sqrMagnitude < 0.001f)
+                    {
+                        pushDir = Vector3.forward;
+                    }
+                    rb.AddForce(pushDir.normalized * 4.0f, ForceMode.Impulse);
+                }
+            }
+        }
     }
 
     /// <summary>

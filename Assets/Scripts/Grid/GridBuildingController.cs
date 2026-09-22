@@ -4,8 +4,9 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// 그리드 상에서 마우스 포인팅 및 키 입력을 통해 오브젝트를 실시간 미리보기하고 설치 및 철거할 수 있는 컨트롤러입니다.
-/// 설치 가능한 블록 아이템(PlaceableItem)을 손에 들었을 때 활성화되며,
+/// 설치 가능한 블록 아이템(PlaceableItem 또는 ItemData)을 손에 들었을 때 활성화되며,
 /// 인게임 게임 뷰에 그리드 격자선(IGridVisualizer) 및 설치 프리뷰(GridPlacementPreview)를 실시간 렌더링합니다.
+/// 마우스 좌클릭으로 설치를 수행하고 인벤토리 수량을 소모하며, R키로 90도 회전을 처리합니다.
 /// </summary>
 [DisallowMultipleComponent]
 public class GridBuildingController : MonoBehaviour
@@ -19,12 +20,15 @@ public class GridBuildingController : MonoBehaviour
     [Tooltip("게임 뷰 설치 프리뷰 고스트 컴포넌트 (비워둘 경우 자동 탐색)")]
     [SerializeField] private GridPlacementPreview _placementPreview;
 
-    [Header("Raycast Settings")]
+    [Header("Placement Range & Raycast Settings")]
+    [Tooltip("플레이어 위치 기준 최대 설치 유효 사거리 (단위: 미터)")]
+    [SerializeField] private float _maxPlacementDistance = 4.5f;
+
     [Tooltip("지면 판정을 위한 레이어 마스크")]
     [SerializeField] private LayerMask _groundLayerMask = ~0;
 
     [Tooltip("레이캐스트 최대 거리")]
-    [SerializeField] private float _maxRaycastDistance = 100f;
+    [SerializeField] private float _maxRaycastDistance = 50f;
 
     [Header("Building State")]
     [SerializeField] private bool _isBuildModeActive = false;
@@ -32,6 +36,8 @@ public class GridBuildingController : MonoBehaviour
     private IGridVisualizer _gridVisualizer;
     private Camera _targetCamera;
     private PlaceableItem _activePlaceableItem;
+    private ItemData _activeItemData;
+    private PlayerItemHolder _activeItemHolder;
     private PlaceableObject _currentPrefab;
     private int _currentRotationAngle = 0;
     private Vector2Int _currentGridCoord;
@@ -41,6 +47,8 @@ public class GridBuildingController : MonoBehaviour
     public bool IsBuildModeActive => _isBuildModeActive;
     public PlaceableObject CurrentPrefab => _currentPrefab;
     public PlaceableItem ActivePlaceableItem => _activePlaceableItem;
+    public ItemData ActiveItemData => _activeItemData;
+    public float MaxPlacementDistance => _maxPlacementDistance;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticData()
@@ -98,7 +106,29 @@ public class GridBuildingController : MonoBehaviour
     }
 
     /// <summary>
-    /// 플레이어가 설치 가능한 블록 아이템을 들었을 때 건설 모드를 활성화합니다.
+    /// ItemData와 플레이어 소유자(PlayerItemHolder)를 기반으로 건설 모드를 활성화합니다.
+    /// </summary>
+    public void StartBuilding(ItemData itemData, PlayerItemHolder itemHolder)
+    {
+        if (itemData == null || itemData.PlaceableBuildingPrefab == null)
+        {
+            StopBuilding();
+            return;
+        }
+
+        _activeItemData = itemData;
+        _activeItemHolder = itemHolder;
+        _activePlaceableItem = null;
+        _currentPrefab = itemData.PlaceableBuildingPrefab;
+        _isBuildModeActive = true;
+        _currentRotationAngle = 0;
+
+        ActivateVisuals();
+        Debug.Log($"[GridBuildingController] 건설 모드 활성화: {_currentPrefab.DisplayName} (아이템: {itemData.ItemName})");
+    }
+
+    /// <summary>
+    /// 하위 호환성용: PlaceableItem 모노비헤이비어로 건설 모드를 활성화합니다.
     /// </summary>
     public void StartBuilding(PlaceableItem placeableItem)
     {
@@ -109,27 +139,13 @@ public class GridBuildingController : MonoBehaviour
         }
 
         _activePlaceableItem = placeableItem;
+        _activeItemData = null;
+        _activeItemHolder = null;
         _currentPrefab = placeableItem.BuildingPrefab;
         _isBuildModeActive = true;
         _currentRotationAngle = 0;
 
-        if (_gridVisualizer == null)
-        {
-            InitializeComponents();
-        }
-
-        // 1. 게임 뷰 그리드 격자 활성화
-        if (_gridVisualizer != null)
-        {
-            _gridVisualizer.ShowGrid();
-        }
-
-        // 2. 게임 뷰 프리뷰 고스트 활성화
-        if (_placementPreview != null)
-        {
-            _placementPreview.Show(_currentPrefab);
-        }
-
+        ActivateVisuals();
         Debug.Log($"[GridBuildingController] 건설 모드 활성화: {_currentPrefab.DisplayName} (수량: {placeableItem.Amount})");
     }
 
@@ -145,10 +161,18 @@ public class GridBuildingController : MonoBehaviour
         }
 
         _activePlaceableItem = null;
+        _activeItemData = null;
+        _activeItemHolder = null;
         _currentPrefab = buildingPrefab;
         _isBuildModeActive = true;
         _currentRotationAngle = 0;
 
+        ActivateVisuals();
+        Debug.Log($"[GridBuildingController] 건설 모드 활성화: {_currentPrefab.DisplayName}");
+    }
+
+    private void ActivateVisuals()
+    {
         if (_gridVisualizer == null)
         {
             InitializeComponents();
@@ -163,8 +187,6 @@ public class GridBuildingController : MonoBehaviour
         {
             _placementPreview.Show(_currentPrefab);
         }
-
-        Debug.Log($"[GridBuildingController] 건설 모드 활성화: {_currentPrefab.DisplayName}");
     }
 
     /// <summary>
@@ -174,6 +196,8 @@ public class GridBuildingController : MonoBehaviour
     {
         _isBuildModeActive = false;
         _activePlaceableItem = null;
+        _activeItemData = null;
+        _activeItemHolder = null;
         _currentPrefab = null;
 
         if (_gridVisualizer != null)
@@ -212,7 +236,7 @@ public class GridBuildingController : MonoBehaviour
 
     /// <summary>
     /// 마우스 포인터 레이캐스트를 수행하여 현재 가리키는 그리드 좌표 및 설치 가능 여부를 갱신합니다.
-    /// 마우스 커서가 잠겨있는(1인칭 화면) 경우 화면 중앙을, 그렇지 않으면 마우스 커서 위치를 기준으로 레이를 발사합니다.
+    /// 사거리(4.5m) 및 NoBuildArea 영역을 검사합니다.
     /// </summary>
     private void UpdateRaycastAndGridCoord()
     {
@@ -237,18 +261,20 @@ public class GridBuildingController : MonoBehaviour
             ray = _targetCamera.ScreenPointToRay(mousePosition);
         }
 
+        Vector3 hitPoint = Vector3.zero;
         if (Physics.Raycast(ray, out RaycastHit hit, _maxRaycastDistance, _groundLayerMask, QueryTriggerInteraction.Ignore))
         {
             _hasValidGroundHit = true;
-            _currentGridCoord = WorldGridManager.Instance.WorldToGridCoordinate(hit.point);
+            hitPoint = hit.point;
+            _currentGridCoord = WorldGridManager.Instance.WorldToGridCoordinate(hitPoint);
         }
         else
         {
-            // 지면 콜라이더가 없을 경우 XZ 바닥 평면(Y = WorldGridManager Origin Y)과 교차 계산
+            // 지면 콜라이더가 없을 경우 바닥 평면과 교차 계산
             Plane groundPlane = new Plane(Vector3.up, WorldGridManager.Instance.GridOrigin);
-            if (groundPlane.Raycast(ray, out float enter))
+            if (groundPlane.Raycast(ray, out float enter) && enter <= _maxRaycastDistance)
             {
-                Vector3 hitPoint = ray.GetPoint(enter);
+                hitPoint = ray.GetPoint(enter);
                 _hasValidGroundHit = true;
                 _currentGridCoord = WorldGridManager.Instance.WorldToGridCoordinate(hitPoint);
             }
@@ -260,7 +286,26 @@ public class GridBuildingController : MonoBehaviour
 
         if (_hasValidGroundHit && _currentPrefab != null)
         {
-            _canPlaceAtCurrentCoord = WorldGridManager.Instance.CanPlaceObject(_currentPrefab, _currentGridCoord, _currentRotationAngle);
+            // 1. 플레이어 기준 사거리 검사 (4.5m)
+            Vector3 playerPos = _activeItemHolder != null ? _activeItemHolder.transform.position : _targetCamera.transform.position;
+            float distToHit = Vector3.Distance(new Vector3(playerPos.x, hitPoint.y, playerPos.z), hitPoint);
+            bool isWithinRange = distToHit <= _maxPlacementDistance;
+
+            // 2. 그리드 좌표 점유 및 캐릭터 겹침 검사
+            bool canPlaceOnGrid = WorldGridManager.Instance.CanPlaceObject(_currentPrefab, _currentGridCoord, _currentRotationAngle);
+
+            // 3. 금지 구역(NoBuildArea) 검사
+            Vector2Int effectiveSize = _currentPrefab.GetRotatedSize(_currentRotationAngle);
+            float cellSize = WorldGridManager.Instance.CellSize;
+            Vector3 blockCenter = WorldGridManager.Instance.GridOrigin + new Vector3(
+                (_currentGridCoord.x + effectiveSize.x * 0.5f) * cellSize,
+                1.0f,
+                (_currentGridCoord.y + effectiveSize.y * 0.5f) * cellSize
+            );
+            Vector3 blockExtents = new Vector3(effectiveSize.x * cellSize * 0.5f, 1.0f, effectiveSize.y * cellSize * 0.5f);
+            bool isBlockedByNoBuildArea = NoBuildArea.IsInAnyNoBuildArea(blockCenter, blockExtents, out _);
+
+            _canPlaceAtCurrentCoord = isWithinRange && canPlaceOnGrid && !isBlockedByNoBuildArea;
         }
         else
         {
@@ -332,11 +377,12 @@ public class GridBuildingController : MonoBehaviour
     }
 
     /// <summary>
-    /// 마우스 우클릭 시 현재 위치에 오브젝트를 설치하고 손의 아이템 수량을 소모합니다.
+    /// 마우스 좌클릭 시 현재 위치에 오브젝트를 설치하고 손의 아이템 수량을 소모합니다.
     /// </summary>
     private void HandlePlacementInput()
     {
-        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        // 마우스 좌클릭(leftButton)으로 설치
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (!_hasValidGroundHit || _currentPrefab == null || WorldGridManager.Instance == null)
             {
@@ -345,17 +391,28 @@ public class GridBuildingController : MonoBehaviour
 
             if (_canPlaceAtCurrentCoord)
             {
-                if (WorldGridManager.Instance.TryPlaceObject(_currentPrefab, _currentGridCoord, _currentRotationAngle, out PlaceableObject instance))
+                // 1. 멀티플레이어 환경: PlayerItemHolder를 통해 ServerRpc 요청
+                if (_activeItemHolder != null && _activeItemHolder.IsSpawned)
                 {
-                    Debug.Log($"[GridBuildingController] '{instance.DisplayName}' 설치 완료 (위치: {_currentGridCoord.x}, {_currentGridCoord.y})");
+                    string itemId = _activeItemData != null ? _activeItemData.ItemId : string.Empty;
+                    _activeItemHolder.RequestPlaceBuilding(itemId, _currentGridCoord, _currentRotationAngle);
+                    _activeItemHolder.ConsumeCurrentHeldPlaceableItem();
+                    Debug.Log($"[GridBuildingController] '{_currentPrefab.DisplayName}' 서버에 설치 요청 전송 (위치: {_currentGridCoord.x}, {_currentGridCoord.y})");
+                }
+                // 2. 싱글 플레이어 / 로컬 전용 처리
+                else if (WorldGridManager.Instance.TryPlaceObject(_currentPrefab, _currentGridCoord, _currentRotationAngle, out PlaceableObject instance))
+                {
+                    Debug.Log($"[GridBuildingController] '{instance.DisplayName}' 로컬 설치 완료 (위치: {_currentGridCoord.x}, {_currentGridCoord.y})");
 
-                    // 손에 든 아이템 수량 1 소모
-                    if (_activePlaceableItem != null)
+                    if (_activeItemHolder != null)
+                    {
+                        _activeItemHolder.ConsumeCurrentHeldPlaceableItem();
+                    }
+                    else if (_activePlaceableItem != null)
                     {
                         bool isEmpty = _activePlaceableItem.ConsumeOne();
                         if (isEmpty)
                         {
-                            // 소지 수량이 0이 되면 아이템 파괴 및 건설 모드 종료
                             var pickable = _activePlaceableItem.Pickable;
                             StopBuilding();
 
