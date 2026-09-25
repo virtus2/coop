@@ -47,17 +47,21 @@ public static class GunCombatSystemSetupAndTest
         ItemData rifle = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Gun_AssaultRifle.asset");
         ItemData pistol = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Gun_TacticalPistol.asset");
         ItemData laser = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Gun_ChargeLaser.asset");
+        ItemData shotgun = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Gun_PumpShotgun.asset");
         ItemData ammoRifle = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Ammo_Rifle.asset");
         ItemData ammoPistol = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Ammo_Pistol.asset");
         ItemData ammoEnergy = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Ammo_Energy.asset");
+        ItemData ammoShotgun = AssetDatabase.LoadAssetAtPath<ItemData>($"{ITEM_DATA_PATH}/Ammo_Shotgun.asset");
 
         var items = new System.Collections.Generic.List<ItemData>();
         if (rifle != null) items.Add(rifle);
         if (pistol != null) items.Add(pistol);
         if (laser != null) items.Add(laser);
+        if (shotgun != null) items.Add(shotgun);
         if (ammoRifle != null) items.Add(ammoRifle);
         if (ammoPistol != null) items.Add(ammoPistol);
         if (ammoEnergy != null) items.Add(ammoEnergy);
+        if (ammoShotgun != null) items.Add(ammoShotgun);
 
         inv.SetInitialItems(items);
         EditorUtility.SetDirty(prefab);

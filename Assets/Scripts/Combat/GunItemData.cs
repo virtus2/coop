@@ -26,6 +26,20 @@ public class GunItemData : ItemData
     [Tooltip("발사 모드 (단발, 연사, 차지샷)")]
     [SerializeField] private GunFireMode _fireMode = GunFireMode.FullAuto;
 
+    [Header("Shotgun Settings (산탄총 전용)")]
+    [Tooltip("산탄총(다중 펠릿 히트스캔 및 거리별 감쇄) 활성화 여부")]
+    [SerializeField] private bool _isShotgun = false;
+    [Tooltip("1회 발사 시 발사되는 산탄 펠릿 개수 (기본: 8발)")]
+    [SerializeField] private int _pelletCount = 8;
+    [Tooltip("확산 원뿔 각도 (도, 기본: 7도)")]
+    [SerializeField] private float _spreadAngle = 7.0f;
+    [Tooltip("최대 데미지가 온전히 들어가는 근거리 한계 (미터, 기본: 3m)")]
+    [SerializeField] private float _damageFalloffStartRange = 3.0f;
+    [Tooltip("최소 데미지 구간이 시작되는 거리 (미터, 기본: 10m)")]
+    [SerializeField] private float _damageFalloffEndRange = 10.0f;
+    [Tooltip("원거리 피격 시 펠릿당 보장되는 최소 데미지 (기본: 1)")]
+    [SerializeField] private int _minDamagePerPellet = 1;
+
     [Header("Charge Shot Settings (차지 모드 전용)")]
     [Tooltip("완전 충전에 필요한 최소 홀드 시간(초)")]
     [SerializeField] private float _minChargeDuration = 1.0f;
@@ -35,10 +49,20 @@ public class GunItemData : ItemData
     [Header("Ammo & Magazine Settings")]
     [Tooltip("탄창 용량 (최대 장탄수)")]
     [SerializeField] private int _magazineCapacity = 30;
-    [Tooltip("재장전에 걸리는 시간(초)")]
+    [Tooltip("재장전에 걸리는 시간(초) - 일반 탄창 교체식 무기용")]
     [SerializeField] private float _reloadDuration = 2.0f;
-    [Tooltip("인벤토리에서 소모할 탄약 아이템 ID (예: Ammo_Rifle, Ammo_Pistol)")]
+    [Tooltip("인벤토리에서 소모할 탄약 아이템 ID (예: Ammo_Rifle, Ammo_Pistol, Ammo_Shotgun)")]
     [SerializeField] private string _requiredAmmoItemId = "Ammo_Rifle";
+
+    [Header("Shell-by-Shell Reload Settings (1발씩 튜브 장전 전용)")]
+    [Tooltip("쉘 바이 쉘(1발씩) 장전 사용 여부")]
+    [SerializeField] private bool _useShellByShellReload = false;
+    [Tooltip("장전 시작 선딜레이(초) - 약실 열기")]
+    [SerializeField] private float _reloadStartDelay = 0.35f;
+    [Tooltip("1발 삽입 주기(초) - 쉘 밀어넣기")]
+    [SerializeField] private float _reloadInsertInterval = 0.5f;
+    [Tooltip("장전 종료 후딜레이(초) - 펌프 차징 및 정자세 복귀")]
+    [SerializeField] private float _reloadEndDelay = 0.3f;
 
     [Header("Recoil Settings (Screen Kick)")]
     [Tooltip("격발 시 화면이 위로 튕기는 피치 각도")]
@@ -58,6 +82,9 @@ public class GunItemData : ItemData
     [SerializeField] private AudioClip _fireSound;
     [SerializeField] private AudioClip _dryFireSound;
     [SerializeField] private AudioClip _reloadSound;
+    [SerializeField] private AudioClip _reloadStartSound;
+    [SerializeField] private AudioClip _reloadInsertSound;
+    [SerializeField] private AudioClip _reloadEndSound;
     [SerializeField] private AudioClip _chargeStartSound;
     [SerializeField] private AudioClip _chargeReadySound;
 
@@ -70,6 +97,18 @@ public class GunItemData : ItemData
     public float FireInterval => Mathf.Max(0.02f, _fireInterval);
     public float MaxRange => _maxRange;
     public GunFireMode FireMode => _fireMode;
+
+    public bool IsShotgun => _isShotgun;
+    public int PelletCount => Mathf.Max(1, _pelletCount);
+    public float SpreadAngle => Mathf.Max(0f, _spreadAngle);
+    public float DamageFalloffStartRange => Mathf.Max(0f, _damageFalloffStartRange);
+    public float DamageFalloffEndRange => Mathf.Max(_damageFalloffStartRange, _damageFalloffEndRange);
+    public int MinDamagePerPellet => Mathf.Max(1, _minDamagePerPellet);
+
+    public bool UseShellByShellReload => _useShellByShellReload;
+    public float ReloadStartDelay => Mathf.Max(0f, _reloadStartDelay);
+    public float ReloadInsertInterval => Mathf.Max(0.05f, _reloadInsertInterval);
+    public float ReloadEndDelay => Mathf.Max(0f, _reloadEndDelay);
 
     public float MinChargeDuration => _minChargeDuration;
     public float ChargedDamageMultiplier => _chargedDamageMultiplier;
@@ -88,6 +127,9 @@ public class GunItemData : ItemData
     public AudioClip FireSound => _fireSound;
     public AudioClip DryFireSound => _dryFireSound;
     public AudioClip ReloadSound => _reloadSound;
+    public AudioClip ReloadStartSound => _reloadStartSound;
+    public AudioClip ReloadInsertSound => _reloadInsertSound;
+    public AudioClip ReloadEndSound => _reloadEndSound;
     public AudioClip ChargeStartSound => _chargeStartSound;
     public AudioClip ChargeReadySound => _chargeReadySound;
 

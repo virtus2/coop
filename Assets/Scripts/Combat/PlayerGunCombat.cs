@@ -1,11 +1,33 @@
 using System;
+using System.Collections.Generic;
 using Coop.VFX;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// 플레이어의 총기 사격(단발, 연사, 차지샷), 재장전, 반동, 서버 권한 히트스캔 판정 및 동기화를 총괄하는 컴포넌트입니다.
+/// 샷건 쉘 바이 쉘(1발씩) 장전 단계
+/// </summary>
+public enum ShellReloadStage
+{
+    None = 0,
+    Starting = 1,
+    Inserting = 2,
+    Ending = 3
+}
+
+/// <summary>
+/// 네트워크 동기화용 총기 행동 상태 (대기, 재장전, 차징)
+/// </summary>
+public enum GunCombatActionState : byte
+{
+    Idle = 0,
+    Reloading = 1,
+    Charging = 2
+}
+
+/// <summary>
+/// 플레이어의 총기 사격(단발, 연사, 차지샷, 샷건 산탄), 재장전(탄창형, 쉘 바이 쉘), 반동, 서버 권한 히트스캔 판정 및 동기화를 총괄하는 컴포넌트입니다.
 /// </summary>
 public class PlayerGunCombat : NetworkBehaviour
 {
@@ -21,7 +43,7 @@ public class PlayerGunCombat : NetworkBehaviour
     [SerializeField] private GameObject _defaultImpactEffectPrefab;
 
     [Header("Debug Settings (F1 키로 언제든 지급 가능)")]
-    [Tooltip("체크 시 게임 시작 시 인벤토리에 총기와 탄약이 없다면 자동으로 테스트 총기 3종 및 탄약을 지급합니다.")]
+    [Tooltip("체크 시 게임 시작 시 인벤토리에 총기와 탄약이 없다면 자동으로 테스트 총기 및 탄약을 지급합니다.")]
     [SerializeField] private bool _autoEquipGunsOnStart = true;
 
     private Camera _mainCamera;
@@ -37,9 +59,13 @@ public class PlayerGunCombat : NetworkBehaviour
     private float _currentChargeTime;
     private bool _hasPlayedChargeReadySound;
 
-    // 재장전 상태
+    // 일반 탄창 재장전 상태
     private bool _isReloading;
     private float _reloadTimer;
+
+    // 쉘 바이 쉘(1발씩) 장전 상태 (샷건 전용)
+    private ShellReloadStage _shellReloadStage = ShellReloadStage.None;
+    private float _shellReloadTimer;
 
     // 달리기(Sprint) 상호작용 및 선딜레이 상태
     private float _sprintToFireTimer;
@@ -52,19 +78,67 @@ public class PlayerGunCombat : NetworkBehaviour
     public int TotalReserveAmmo => _currentGunData != null && _playerInventory != null
         ? _playerInventory.GetTotalAmmoCount(_currentGunData.RequiredAmmoItemId)
         : 0;
-    public bool IsReloading => _isReloading;
-    public float ReloadProgress => _currentGunData != null && _isReloading
-        ? Mathf.Clamp01(_reloadTimer / _currentGunData.ReloadDuration)
-        : 0f;
+    public bool IsReloading => _isReloading || _shellReloadStage != ShellReloadStage.None;
+    public ShellReloadStage CurrentShellReloadStage => _shellReloadStage;
+    public float ReloadProgress
+    {
+        get
+        {
+            if (_currentGunData == null) return 0f;
+            if (_isReloading)
+            {
+                return Mathf.Clamp01(_reloadTimer / _currentGunData.ReloadDuration);
+            }
+            if (_shellReloadStage != ShellReloadStage.None)
+            {
+                return (float)CurrentAmmoInClip / _currentGunData.MagazineCapacity;
+            }
+            return 0f;
+        }
+    }
     public bool IsCharging => _isCharging;
     public float ChargeProgress => _currentGunData != null && _isCharging
         ? Mathf.Clamp01(_currentChargeTime / _currentGunData.MinChargeDuration)
         : 0f;
 
+    private readonly NetworkVariable<GunCombatActionState> _networkCombatActionState = new NetworkVariable<GunCombatActionState>(
+        GunCombatActionState.Idle,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public GunCombatActionState CombatActionState => (!IsSpawned || IsOwner) ? GetCurrentCombatActionState() : _networkCombatActionState.Value;
+
     public event Action OnAmmoChanged;
     public event Action OnReloadStarted;
     public event Action OnReloadCompleted;
     public event Action OnReloadCancelled;
+    public event Action<GunCombatActionState> OnCombatActionStateChanged;
+
+    public GunCombatActionState GetCurrentCombatActionState()
+    {
+        if (_isReloading || _shellReloadStage != ShellReloadStage.None)
+        {
+            return GunCombatActionState.Reloading;
+        }
+        if (_isCharging)
+        {
+            return GunCombatActionState.Charging;
+        }
+        return GunCombatActionState.Idle;
+    }
+
+    private void UpdateCombatActionStateSync()
+    {
+        if (IsSpawned && IsOwner)
+        {
+            GunCombatActionState state = GetCurrentCombatActionState();
+            if (_networkCombatActionState.Value != state)
+            {
+                _networkCombatActionState.Value = state;
+            }
+        }
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatic()
@@ -105,6 +179,8 @@ public class PlayerGunCombat : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        _networkCombatActionState.OnValueChanged += HandleNetworkCombatActionStateChanged;
+
         if (IsOwner)
         {
             LocalInstance = this;
@@ -124,10 +200,19 @@ public class PlayerGunCombat : NetworkBehaviour
 
             CheckCurrentHeldGun();
         }
+        else
+        {
+            if (_networkCombatActionState.Value != GunCombatActionState.Idle)
+            {
+                HandleNetworkCombatActionStateChanged(GunCombatActionState.Idle, _networkCombatActionState.Value);
+            }
+        }
     }
 
     public override void OnNetworkDespawn()
     {
+        _networkCombatActionState.OnValueChanged -= HandleNetworkCombatActionStateChanged;
+
         if (IsOwner)
         {
             if (_playerInventory != null)
@@ -141,6 +226,28 @@ public class PlayerGunCombat : NetworkBehaviour
             }
         }
         base.OnNetworkDespawn();
+    }
+
+    private void HandleNetworkCombatActionStateChanged(GunCombatActionState previousState, GunCombatActionState newState)
+    {
+        OnCombatActionStateChanged?.Invoke(newState);
+
+        if (IsOwner) return;
+
+        switch (newState)
+        {
+            case GunCombatActionState.Reloading:
+                OnReloadStarted?.Invoke();
+                break;
+            case GunCombatActionState.Charging:
+                break;
+            case GunCombatActionState.Idle:
+                if (previousState == GunCombatActionState.Reloading)
+                {
+                    OnReloadCompleted?.Invoke();
+                }
+                break;
+        }
     }
 
     private void Update()
@@ -157,6 +264,7 @@ public class PlayerGunCombat : NetworkBehaviour
 
         UpdateTimers();
         HandleCombatInput();
+        UpdateCombatActionStateSync();
     }
 
     private void UpdateTimers()
@@ -177,6 +285,7 @@ public class PlayerGunCombat : NetworkBehaviour
             _requireMouseReleaseToFire = false;
         }
 
+        // 일반 탄창 재장전 타이머
         if (_isReloading)
         {
             _reloadTimer += Time.deltaTime;
@@ -184,6 +293,12 @@ public class PlayerGunCombat : NetworkBehaviour
             {
                 CompleteReload();
             }
+        }
+
+        // 쉘 바이 쉘(1발씩) 장전 타이머 및 단계 전환
+        if (_shellReloadStage != ShellReloadStage.None)
+        {
+            UpdateShellReload();
         }
 
         if (_isCharging && _currentGunData != null)
@@ -208,15 +323,17 @@ public class PlayerGunCombat : NetworkBehaviour
 
         bool isSprinting = _playerController != null && _playerController.IsSprinting;
 
-        // 1. 재장전 도중 달리기(Shift) 시도 시 재장전 즉시 취소 (E-14)
-        if (_isReloading && isSprinting)
-        {
-            CancelReload();
-        }
-
-        // 2. 사격/차징 도중 달리기(Shift) 시도 시 즉시 중단 및 마우스 재클릭 요구 (E-12, 상황 A)
+        // 1. 재장전 도중 달리기(Shift) 시도 시 재장전 즉시 취소 (E-06, E-14)
         if (isSprinting)
         {
+            if (_isReloading)
+            {
+                CancelReload();
+            }
+            if (_shellReloadStage != ShellReloadStage.None)
+            {
+                CancelShellReload();
+            }
             if (_isCharging)
             {
                 CancelCharge();
@@ -227,7 +344,33 @@ public class PlayerGunCombat : NetworkBehaviour
             }
         }
 
-        // 3. 재장전 진행 중에는 발사 입력 무시하고 재장전 계속 진행 (E-03)
+        // 2. 쉘 바이 쉘 장전 중 좌클릭 입력 처리 (E-04, E-05)
+        if (_shellReloadStage != ShellReloadStage.None)
+        {
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                CheckInterruptSprintOnAttack();
+                if (CurrentAmmoInClip <= 0)
+                {
+                    // 0발 빈 총 상태에서 1발 삽입 전 클릭: 장전 즉시 캔슬 + 빈총 소리 (E-04)
+                    CancelShellReload();
+                    PlayDryFireSound();
+                    return;
+                }
+                else
+                {
+                    // 1발 이상 들어간 상태에서 장전 도중 클릭: 딜레이 0초로 즉시 장전을 끊고 바로 탕! 격발 (E-05)
+                    CancelShellReload();
+                    TryFire(false);
+                    return;
+                }
+            }
+
+            // 사격 입력이 없다면 쉘 바이 쉘 장전 계속 진행
+            return;
+        }
+
+        // 3. 일반 탄창 재장전 진행 중에는 발사 입력 무시하고 재장전 계속 진행 (E-03)
         if (_isReloading)
         {
             return;
@@ -354,6 +497,7 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             _isCharging = false;
             _currentChargeTime = 0f;
+            UpdateCombatActionStateSync();
             Debug.Log("[PlayerGunCombat] 차징 취소됨.");
         }
     }
@@ -396,12 +540,58 @@ public class PlayerGunCombat : NetworkBehaviour
             _playerController.ApplyShootingPenalty(_currentGunData.ShootingMovementMultiplier, penaltyDuration);
         }
 
-        // 3. 로컬 비주얼 및 오디오 즉각 재생 (0ms 체감)
-        ExecuteLocalFirePrediction(isCharged);
-
-        // 4. 서버에 완전 권한 레이캐스트 요청
+        // 3. 로컬 비주얼 및 오디오 즉각 재생 (0ms 체감) 및 서버 RPC 전송
         Ray aimRay = _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        RequestFireServerRpc(aimRay.origin, aimRay.direction, isCharged, NetworkManager.Singleton.LocalClientId);
+
+        if (_currentGunData.IsShotgun)
+        {
+            // 샷건: 난수 시드 생성 및 로컬 즉시 시각/청각 피드백 (8발 Tracer 포함)
+            int randomSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+            ExecuteLocalShotgunPrediction(aimRay.origin, aimRay.direction, randomSeed);
+            RequestShotgunFireServerRpc(aimRay.origin, aimRay.direction, randomSeed, isCharged, NetworkManager.Singleton.LocalClientId);
+        }
+        else
+        {
+            // 일반 총기 로컬 예측 및 서버 단일 레이캐스트 요청
+            ExecuteLocalFirePrediction(isCharged);
+            RequestFireServerRpc(aimRay.origin, aimRay.direction, isCharged, NetworkManager.Singleton.LocalClientId);
+        }
+    }
+
+    private void ExecuteLocalShotgunPrediction(Vector3 origin, Vector3 direction, int seed)
+    {
+        if (_currentGunData == null) return;
+
+        // 격발음 재생
+        if (_currentGunData.FireSound != null)
+        {
+            AudioSource.PlayClipAtPoint(_currentGunData.FireSound, _mainCamera.transform.position);
+        }
+
+        // 반동 적용
+        if (_playerController != null)
+        {
+            _playerController.ApplyRecoil(_currentGunData.RecoilPitch, _currentGunData.RecoilYaw, _currentGunData.RecoilRecoverySpeed);
+        }
+
+        // 총구 화염 스폰
+        Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
+        if (_currentGunData.MuzzleFlashPrefab != null && holdPoint != null)
+        {
+            Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
+        }
+
+        // 로컬 8가닥 탄 궤적(Tracer Line) 즉시 렌더링 (0ms 체감)
+        Vector3[] dirs = GenerateConeDirections(direction, _currentGunData.SpreadAngle, _currentGunData.PelletCount, seed);
+        for (int i = 0; i < dirs.Length; i++)
+        {
+            Vector3 targetPoint = origin + dirs[i] * Mathf.Min(_currentGunData.MaxRange, 15f);
+            if (Physics.Raycast(origin, dirs[i], out RaycastHit hit, _currentGunData.MaxRange, ~0, QueryTriggerInteraction.Ignore))
+            {
+                targetPoint = hit.point;
+            }
+            SpawnTracer(origin, targetPoint);
+        }
     }
 
     private void ExecuteLocalFirePrediction(bool isCharged)
@@ -604,6 +794,233 @@ public class PlayerGunCombat : NetworkBehaviour
         SpawnTracer(origin, hitPoint);
     }
 
+    private class ShotgunAccumulatedDamage
+    {
+        public int HeadDamage;
+        public int BodyDamage;
+        public Vector3 LastHitPoint;
+        public Vector3 LastHitNormal;
+    }
+
+    /// <summary>
+    /// 결정론적 난수 시드(Seed)를 기반으로 전방 벡터(forward)를 중심으로 spreadAngle 반경 내에 균등 분산된 count개의 방향 벡터를 생성합니다.
+    /// 클라이언트와 서버가 동일한 시드를 사용하면 100% 동일한 방향 벡터 배열을 얻습니다.
+    /// </summary>
+    public static Vector3[] GenerateConeDirections(Vector3 forward, float spreadAngle, int count, int seed)
+    {
+        Vector3[] directions = new Vector3[count];
+        System.Random rng = new System.Random(seed);
+
+        Quaternion forwardRotation = Quaternion.LookRotation(forward);
+
+        for (int i = 0; i < count; i++)
+        {
+            // 0 ~ spreadAngle 사이의 무작위 각도 (원형 균등 분포를 위해 제곱근 적용)
+            double r = rng.NextDouble();
+            float theta = Mathf.Sqrt((float)r) * spreadAngle;
+            // 0 ~ 360도 무작위 롤 각도
+            float phi = (float)(rng.NextDouble() * 360.0);
+
+            Quaternion deviation = Quaternion.AngleAxis(phi, Vector3.forward) * Quaternion.AngleAxis(theta, Vector3.up);
+            Vector3 localDir = deviation * Vector3.forward;
+
+            directions[i] = (forwardRotation * localDir).normalized;
+        }
+
+        return directions;
+    }
+
+    [ServerRpc]
+    private void RequestShotgunFireServerRpc(Vector3 origin, Vector3 forwardDirection, int seed, bool isCharged, ulong instigatorClientId)
+    {
+        if (_currentGunData == null)
+        {
+            CheckCurrentHeldGun();
+        }
+
+        if (_currentGunData == null)
+        {
+            Debug.LogWarning($"[Server] RequestShotgunFireServerRpc 무시: 발사자(ClientId={instigatorClientId})의 장착 총기 데이터를 찾을 수 없습니다.");
+            return;
+        }
+
+        int pelletCount = _currentGunData.PelletCount;
+        float spreadAngle = _currentGunData.SpreadAngle;
+        float maxRange = _currentGunData.MaxRange;
+        int baseTotalDamage = _currentGunData.BaseDamage;
+        if (isCharged)
+        {
+            baseTotalDamage = Mathf.RoundToInt(baseTotalDamage * _currentGunData.ChargedDamageMultiplier);
+        }
+
+        // 펠릿 1발당 기본 데미지 (내림 계산)
+        int basePelletDamage = Mathf.FloorToInt((float)baseTotalDamage / pelletCount);
+
+        Vector3[] directions = GenerateConeDirections(forwardDirection, spreadAngle, pelletCount, seed);
+
+        Vector3[] hitPoints = new Vector3[pelletCount];
+        Vector3[] hitNormals = new Vector3[pelletCount];
+        bool[] hitSomethings = new bool[pelletCount];
+        byte[] surfaceTypes = new byte[pelletCount];
+
+        Dictionary<IDamageable, ShotgunAccumulatedDamage> targetDamageMap = new Dictionary<IDamageable, ShotgunAccumulatedDamage>();
+
+        for (int i = 0; i < pelletCount; i++)
+        {
+            Vector3 dir = directions[i];
+            Ray ray = new Ray(origin, dir);
+            bool hitSomething = Physics.Raycast(ray, out RaycastHit hit, maxRange, ~0, QueryTriggerInteraction.Ignore);
+
+            hitSomethings[i] = hitSomething;
+            hitPoints[i] = hitSomething ? hit.point : (origin + dir * maxRange);
+            hitNormals[i] = hitSomething ? hit.normal : -dir;
+            surfaceTypes[i] = (byte)SurfaceType.Default;
+
+            if (hitSomething)
+            {
+                SurfaceType surfaceType = DetermineSurfaceType(hit.collider);
+                surfaceTypes[i] = (byte)surfaceType;
+
+                // 1. 발사자 본인 또는 아군 플레이어 검사 (Friendly Fire 방지 - E-12)
+                PlayerController hitPlayer = hit.collider.GetComponentInParent<PlayerController>();
+                if (hitPlayer != null)
+                {
+                    continue;
+                }
+
+                // 2. 거리별 데미지 감쇄 계산
+                // 0 ~ 3m: 100% 풀 데미지
+                // 3 ~ 10m: 거리 비례 선형 감쇄
+                // 10 ~ 15m: 펠릿당 최소 1 데미지 보장
+                float dist = hit.distance;
+                int currentPelletDamage;
+                if (dist <= _currentGunData.DamageFalloffStartRange)
+                {
+                    currentPelletDamage = basePelletDamage;
+                }
+                else if (dist >= _currentGunData.DamageFalloffEndRange)
+                {
+                    currentPelletDamage = _currentGunData.MinDamagePerPellet;
+                }
+                else
+                {
+                    float t = Mathf.InverseLerp(_currentGunData.DamageFalloffStartRange, _currentGunData.DamageFalloffEndRange, dist);
+                    currentPelletDamage = Mathf.RoundToInt(Mathf.Lerp(basePelletDamage, _currentGunData.MinDamagePerPellet, t));
+                }
+
+                if (currentPelletDamage < _currentGunData.MinDamagePerPellet)
+                {
+                    currentPelletDamage = _currentGunData.MinDamagePerPellet;
+                }
+
+                // 3. Hitbox(헤드샷/부위별) 확인
+                Hitbox hitbox = hit.collider.GetComponent<Hitbox>();
+                if (hitbox != null && hitbox.Damageable != null)
+                {
+                    IDamageable target = hitbox.Damageable;
+                    if (!targetDamageMap.TryGetValue(target, out ShotgunAccumulatedDamage acc))
+                    {
+                        acc = new ShotgunAccumulatedDamage();
+                        targetDamageMap[target] = acc;
+                    }
+
+                    acc.LastHitPoint = hit.point;
+                    acc.LastHitNormal = hit.normal;
+
+                    if (hitbox.Type == HitboxType.Head)
+                    {
+                        acc.HeadDamage += Mathf.RoundToInt(currentPelletDamage * 1.5f);
+                    }
+                    else
+                    {
+                        acc.BodyDamage += currentPelletDamage;
+                    }
+                }
+                // 4. 일반 IDamageable 확인 (몬스터 또는 DestructibleObject)
+                else
+                {
+                    IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
+                    if (damageable != null)
+                    {
+                        if (!targetDamageMap.TryGetValue(damageable, out ShotgunAccumulatedDamage acc))
+                        {
+                            acc = new ShotgunAccumulatedDamage();
+                            targetDamageMap[damageable] = acc;
+                        }
+
+                        acc.LastHitPoint = hit.point;
+                        acc.LastHitNormal = hit.normal;
+                        acc.BodyDamage += currentPelletDamage;
+                    }
+                }
+            }
+        }
+
+        // 대상별로 [헤드 합산 1회] + [몸통 합산 1회] 데미지 적용 (E-15)
+        foreach (var kvp in targetDamageMap)
+        {
+            IDamageable target = kvp.Key;
+            ShotgunAccumulatedDamage acc = kvp.Value;
+
+            if (acc.HeadDamage > 0)
+            {
+                DamageInfo headDmg = new DamageInfo(acc.HeadDamage, instigatorClientId, acc.LastHitPoint, acc.LastHitNormal, HitboxType.Head, isCharged);
+                target.TakeDamage(headDmg);
+                Debug.Log($"[Server] 샷건 헤드 합산 적중! 대상: {((Component)target).name}, 데미지: {acc.HeadDamage} (차지: {isCharged})");
+            }
+
+            if (acc.BodyDamage > 0)
+            {
+                DamageInfo bodyDmg = new DamageInfo(acc.BodyDamage, instigatorClientId, acc.LastHitPoint, acc.LastHitNormal, HitboxType.Body, isCharged);
+                target.TakeDamage(bodyDmg);
+                Debug.Log($"[Server] 샷건 몸통 합산 적중! 대상: {((Component)target).name}, 데미지: {acc.BodyDamage} (차지: {isCharged})");
+            }
+        }
+
+        // 모든 클라이언트에 8개 피격 지점 파티클 및 원격 플레이어 트레이서 브로드캐스트
+        NotifyShotgunHitClientRpc(origin, hitPoints, hitNormals, hitSomethings, surfaceTypes);
+    }
+
+    [ClientRpc]
+    private void NotifyShotgunHitClientRpc(Vector3 origin, Vector3[] hitPoints, Vector3[] hitNormals, bool[] hitSomethings, byte[] surfaceTypes)
+    {
+        // 1. 원격 플레이어인 경우 총구 격발음, Muzzle Flash 및 8발 Tracer 재생
+        if (!IsOwner && _currentGunData != null)
+        {
+            if (_currentGunData.FireSound != null)
+            {
+                AudioSource.PlayClipAtPoint(_currentGunData.FireSound, origin);
+            }
+
+            Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
+            if (_currentGunData.MuzzleFlashPrefab != null && holdPoint != null)
+            {
+                Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
+            }
+
+            if (hitPoints != null)
+            {
+                for (int i = 0; i < hitPoints.Length; i++)
+                {
+                    SpawnTracer(origin, hitPoints[i]);
+                }
+            }
+        }
+
+        // 2. 피격 지점에 재질별 파티클 스폰 (모든 클라이언트)
+        if (hitPoints != null && hitSomethings != null && surfaceTypes != null)
+        {
+            for (int i = 0; i < hitPoints.Length; i++)
+            {
+                if (hitSomethings[i])
+                {
+                    SurfaceType surfaceType = (SurfaceType)surfaceTypes[i];
+                    SpawnImpactEffect(hitPoints[i], hitNormals[i], surfaceType);
+                }
+            }
+        }
+    }
+
     private void SpawnImpactEffect(Vector3 point, Vector3 normal, SurfaceType surfaceType)
     {
         GameObject overridePrefab = _currentGunData != null && _currentGunData.ImpactEffectPrefab != null
@@ -634,7 +1051,7 @@ public class PlayerGunCombat : NetworkBehaviour
 
     public void TryStartReload()
     {
-        if (_currentGunData == null || _currentGunSlot == null || _isReloading) return;
+        if (_currentGunData == null || _currentGunSlot == null || IsReloading) return;
 
         // 이미 탄창이 가득 차 있으면 재장전 불필요
         if (_currentGunSlot.CurrentAmmo >= _currentGunData.MagazineCapacity)
@@ -642,7 +1059,7 @@ public class PlayerGunCombat : NetworkBehaviour
             return;
         }
 
-        // 인벤토리에 탄약이 0개이면 장전 불가 (E-07)
+        // 인벤토리에 탄약이 0개이면 장전 불가 (E-07, E-10)
         int reserveAmmo = TotalReserveAmmo;
         if (reserveAmmo <= 0)
         {
@@ -653,12 +1070,20 @@ public class PlayerGunCombat : NetworkBehaviour
         // 차징 중이었다면 취소
         CancelCharge();
 
-        // 달리는 도중 재장전 시도 시 달리기 즉시 해제 (E-15)
+        // 달리는 도중 재장전 시도 시 달리기 즉시 해제 (E-18)
         if (_playerController != null && _playerController.IsSprinting)
         {
             _playerController.CancelSprint(0.15f);
         }
 
+        // 쉘 바이 쉘 장전 무기인 경우 1발씩 장전 루틴 시작
+        if (_currentGunData.UseShellByShellReload)
+        {
+            StartShellReload();
+            return;
+        }
+
+        // 일반 탄창 교체식 재장전
         _isReloading = true;
         _reloadTimer = 0f;
 
@@ -705,6 +1130,7 @@ public class PlayerGunCombat : NetworkBehaviour
 
         _isReloading = false;
         _reloadTimer = 0f;
+        UpdateCombatActionStateSync();
 
         OnReloadCompleted?.Invoke();
         OnAmmoChanged?.Invoke();
@@ -716,8 +1142,172 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             _isReloading = false;
             _reloadTimer = 0f;
+            UpdateCombatActionStateSync();
             OnReloadCancelled?.Invoke();
             Debug.Log("[PlayerGunCombat] 재장전 취소됨 (무기 교체 등).");
+        }
+    }
+
+    #endregion
+
+    #region Shell-by-Shell Reload System (Shotgun)
+
+    private void StartShellReload()
+    {
+        _shellReloadStage = ShellReloadStage.Starting;
+        _shellReloadTimer = 0f;
+
+        // 시작음 재생
+        AudioClip startClip = _currentGunData.ReloadStartSound != null ? _currentGunData.ReloadStartSound : _currentGunData.ReloadSound;
+        if (startClip != null)
+        {
+            AudioSource.PlayClipAtPoint(startClip, _mainCamera.transform.position);
+        }
+
+        if (IsSpawned)
+        {
+            RequestShellReloadSoundServerRpc(transform.position, 0);
+        }
+
+        OnReloadStarted?.Invoke();
+        Debug.Log($"[PlayerGunCombat] 쉘 바이 쉘 장전 시작 (선딜레이: {_currentGunData.ReloadStartDelay}초)");
+    }
+
+    private void UpdateShellReload()
+    {
+        if (_currentGunData == null || _currentGunSlot == null)
+        {
+            CancelShellReload();
+            return;
+        }
+
+        _shellReloadTimer += Time.deltaTime;
+
+        switch (_shellReloadStage)
+        {
+            case ShellReloadStage.Starting:
+                if (_shellReloadTimer >= _currentGunData.ReloadStartDelay)
+                {
+                    _shellReloadStage = ShellReloadStage.Inserting;
+                    _shellReloadTimer = 0f;
+                }
+                break;
+
+            case ShellReloadStage.Inserting:
+                if (_shellReloadTimer >= _currentGunData.ReloadInsertInterval)
+                {
+                    _shellReloadTimer = 0f;
+
+                    // 인벤토리 잔여 탄약 검사 (E-07, E-08)
+                    int reserve = TotalReserveAmmo;
+                    if (reserve <= 0)
+                    {
+                        // 더 이상 탄약이 없으면 장전 종료 단계로 즉시 전환
+                        _shellReloadStage = ShellReloadStage.Ending;
+                        return;
+                    }
+
+                    // 1발 소모 및 장전
+                    int consumed = _playerInventory != null ? _playerInventory.ConsumeAmmo(_currentGunData.RequiredAmmoItemId, 1) : 0;
+                    if (consumed > 0)
+                    {
+                        _currentGunSlot.CurrentAmmo += consumed;
+                        OnAmmoChanged?.Invoke();
+
+                        // 1발 삽입 사운드 재생
+                        if (_currentGunData.ReloadInsertSound != null)
+                        {
+                            AudioSource.PlayClipAtPoint(_currentGunData.ReloadInsertSound, _mainCamera.transform.position);
+                        }
+                        if (IsSpawned)
+                        {
+                            RequestShellReloadSoundServerRpc(transform.position, 1);
+                        }
+
+                        Debug.Log($"[PlayerGunCombat] 쉘 1발 장전 완료! ({_currentGunSlot.CurrentAmmo}/{_currentGunData.MagazineCapacity})");
+                    }
+
+                    // 탄창이 가득 찼거나 인벤토리 탄약이 바닥났다면 종료 단계로 전환
+                    if (_currentGunSlot.CurrentAmmo >= _currentGunData.MagazineCapacity || TotalReserveAmmo <= 0)
+                    {
+                        _shellReloadStage = ShellReloadStage.Ending;
+                    }
+                }
+                break;
+
+            case ShellReloadStage.Ending:
+                if (_shellReloadTimer >= _currentGunData.ReloadEndDelay)
+                {
+                    CompleteShellReload();
+                }
+                break;
+        }
+    }
+
+    public void CancelShellReload()
+    {
+        if (_shellReloadStage != ShellReloadStage.None)
+        {
+            _shellReloadStage = ShellReloadStage.None;
+            _shellReloadTimer = 0f;
+            UpdateCombatActionStateSync();
+            OnReloadCancelled?.Invoke();
+            Debug.Log("[PlayerGunCombat] 쉘 바이 쉘 장전 취소됨 (현재 장전된 탄약 보존).");
+        }
+    }
+
+    private void CompleteShellReload()
+    {
+        _shellReloadStage = ShellReloadStage.None;
+        _shellReloadTimer = 0f;
+        UpdateCombatActionStateSync();
+
+        // 장전 종료 사운드 재생
+        if (_currentGunData != null)
+        {
+            if (_currentGunData.ReloadEndSound != null)
+            {
+                AudioSource.PlayClipAtPoint(_currentGunData.ReloadEndSound, _mainCamera.transform.position);
+            }
+            if (IsSpawned)
+            {
+                RequestShellReloadSoundServerRpc(transform.position, 2);
+            }
+        }
+
+        OnReloadCompleted?.Invoke();
+        OnAmmoChanged?.Invoke();
+        Debug.Log("[PlayerGunCombat] 쉘 바이 쉘 장전 전체 완료!");
+    }
+
+    [ServerRpc]
+    private void RequestShellReloadSoundServerRpc(Vector3 soundPosition, byte soundType)
+    {
+        NotifyShellReloadSoundClientRpc(soundPosition, soundType);
+    }
+
+    [ClientRpc]
+    private void NotifyShellReloadSoundClientRpc(Vector3 soundPosition, byte soundType)
+    {
+        if (IsOwner || _currentGunData == null) return;
+
+        AudioClip clipToPlay = null;
+        switch (soundType)
+        {
+            case 0: // Start
+                clipToPlay = _currentGunData.ReloadStartSound != null ? _currentGunData.ReloadStartSound : _currentGunData.ReloadSound;
+                break;
+            case 1: // Insert
+                clipToPlay = _currentGunData.ReloadInsertSound;
+                break;
+            case 2: // End
+                clipToPlay = _currentGunData.ReloadEndSound;
+                break;
+        }
+
+        if (clipToPlay != null)
+        {
+            AudioSource.PlayClipAtPoint(clipToPlay, soundPosition);
         }
     }
 
@@ -729,6 +1319,7 @@ public class PlayerGunCombat : NetworkBehaviour
     {
         CancelCharge();
         CancelReload();
+        CancelShellReload();
         CheckCurrentHeldGun();
     }
 
@@ -767,6 +1358,7 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             CancelCharge();
             CancelReload();
+            CancelShellReload();
             _currentGunData = null;
             _currentGunSlot = null;
         }
@@ -819,19 +1411,23 @@ public class PlayerGunCombat : NetworkBehaviour
         ItemData rifle = Resources.Load<ItemData>("ItemData/Gun_AssaultRifle");
         ItemData pistol = Resources.Load<ItemData>("ItemData/Gun_TacticalPistol");
         ItemData laser = Resources.Load<ItemData>("ItemData/Gun_ChargeLaser");
+        ItemData shotgun = Resources.Load<ItemData>("ItemData/Gun_PumpShotgun");
         ItemData ammoRifle = Resources.Load<ItemData>("ItemData/Ammo_Rifle");
         ItemData ammoPistol = Resources.Load<ItemData>("ItemData/Ammo_Pistol");
         ItemData ammoEnergy = Resources.Load<ItemData>("ItemData/Ammo_Energy");
+        ItemData ammoShotgun = Resources.Load<ItemData>("ItemData/Ammo_Shotgun");
 
         if (rifle != null) _playerInventory.AddItem(rifle, 1);
         if (pistol != null) _playerInventory.AddItem(pistol, 1);
         if (laser != null) _playerInventory.AddItem(laser, 1);
+        if (shotgun != null) _playerInventory.AddItem(shotgun, 1);
         if (ammoRifle != null) _playerInventory.AddItem(ammoRifle, 120);
         if (ammoPistol != null) _playerInventory.AddItem(ammoPistol, 60);
         if (ammoEnergy != null) _playerInventory.AddItem(ammoEnergy, 50);
+        if (ammoShotgun != null) _playerInventory.AddItem(ammoShotgun, 24);
 
         CheckCurrentHeldGun();
-        Debug.Log("<color=green>[PlayerGunCombat] 테스트 총기 3종(돌격소총, 권총, 차지레이저) 및 탄약이 인벤토리에 지급되었습니다! (단축키: F1)</color>");
+        Debug.Log("<color=green>[PlayerGunCombat] 테스트 총기 4종(돌격소총, 권총, 차지레이저, 펌프샷건) 및 탄약이 인벤토리에 지급되었습니다! (단축키: F1)</color>");
     }
 
     #endregion

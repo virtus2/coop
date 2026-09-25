@@ -723,19 +723,6 @@ public class PlayerMeleeCombat : NetworkBehaviour
         PlaySwingVisual();
     }
 
-    // 하위 호환성 유지용 RPC
-    [ServerRpc]
-    private void RequestMeleeSwingSoundServerRpc(Vector3 soundPos)
-    {
-        RequestMeleeSwingServerRpc(soundPos);
-    }
-
-    [ClientRpc]
-    private void NotifyMeleeSwingSoundClientRpc(Vector3 soundPos)
-    {
-        NotifyMeleeSwingClientRpc(soundPos);
-    }
-
     [ServerRpc]
     private void RequestMeleeWallHitServerRpc(Vector3 hitPoint, Vector3 hitNormal, byte surfaceTypeByte)
     {

@@ -688,16 +688,6 @@ public class PlayerItemHolder : NetworkBehaviour
         ItemData itemData = string.IsNullOrEmpty(itemId) ? null : ItemDatabase.GetItem(itemId);
         _currentHeldItemData = itemData;
         NotifyCombatHeldItemChanged(itemData);
-        SyncHeldItemClientRpc(itemId);
-    }
-
-    [ClientRpc]
-    private void SyncHeldItemClientRpc(string itemId)
-    {
-        if (!IsOwner)
-        {
-            ApplyRemoteHeldItem(itemId);
-        }
     }
 
     [ServerRpc]
@@ -731,7 +721,6 @@ public class PlayerItemHolder : NetworkBehaviour
         }
 
         _networkHeldItemId.Value = string.Empty;
-        SyncHeldItemClientRpc(string.Empty);
     }
 
     /// <summary>

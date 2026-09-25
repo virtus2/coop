@@ -8,6 +8,7 @@ When working on this project, please adhere to the following rules and guideline
 - `docs/product-spec.md`: 게임 전반의 개요, 메커니즘, 기술 요구사항 명세.
 - `docs/gameplay-loop-and-mechanics.md`: 코어 방어 목표, 게임플레이 루프, 웨이브 시스템, 보스/월드 프로그레션 상세 명세.
 - `docs/inventory-item-system.md`: 인벤토리, 아이템 데이터, 손 뷰모델 및 월드 물리 동기화 시스템 명세.
+- `docs/gun-combat-system-spec.md`: 총기 사격 및 히트스캔 전투 시스템 기본 명세서 (샷건 포함).
 - `docs/art-style-reference.md`: 프로젝트 아트 스타일, 레퍼런스 게임 분석 및 시각적 가이드라인.
 
 ## Project Settings

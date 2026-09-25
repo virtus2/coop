@@ -666,6 +666,9 @@ MonoBehaviour:
   _playerInventory: {fileID: 0}
   _playerItemHolder: {fileID: 0}
   _playerInteraction: {fileID: 0}
+  _hitLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &4416810848816386381
 GameObject:
   m_ObjectHideFlags: 0

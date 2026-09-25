@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dab0cbdcdf83c643a8e91400310fd76, type: 3}
+  m_Name: Gun_PumpShotgun
+  m_EditorClassIdentifier: Assembly-CSharp::GunItemData
+  _itemId: Gun_PumpShotgun
+  _itemName: "\uD38C\uD504\uC561\uC158 \uC0F7\uAC74"
+  _icon: {fileID: 0}
+  _description: "\uADFC\uAC70\uB9AC\uC5D0\uC11C 8\uBC1C\uC758 \uC0B0\uD0C4 \uD3A0\uB9BF\uC744
+    \uBC29\uCD9C\uD558\uB294 \uAC15\uB825\uD55C \uC0B0\uD0C4\uCD1D\uC785\uB2C8\uB2E4.
+    1\uBC1C\uC529 \uD29C\uBE0C\uC5D0 \uC7A5\uC804\uD558\uBA70 \uC7A5\uC804 \uC911
+    \uC989\uC2DC \uACA9\uBC1C\uC774 \uAC00\uB2A5\uD569\uB2C8\uB2E4."
+  _maxStackSize: 1
+  _heldMesh: {fileID: 0}
+  _heldMaterial: {fileID: 0}
+  _heldLocalPosition: {x: 0, y: 0, z: 0}
+  _heldLocalRotation: {x: 0, y: 0, z: 0}
+  _heldLocalScale: {x: 1, y: 1, z: 1}
+  _actionType: 1
+  _placeableBuildingPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 0}
+  _baseDamage: 80
+  _fireInterval: 0.8
+  _maxRange: 15
+  _fireMode: 0
+  _isShotgun: 1
+  _pelletCount: 8
+  _spreadAngle: 7
+  _damageFalloffStartRange: 3
+  _damageFalloffEndRange: 10
+  _minDamagePerPellet: 1
+  _minChargeDuration: 1
+  _chargedDamageMultiplier: 2
+  _magazineCapacity: 8
+  _reloadDuration: 2
+  _requiredAmmoItemId: Ammo_Shotgun
+  _useShellByShellReload: 1
+  _reloadStartDelay: 0.35
+  _reloadInsertInterval: 0.5
+  _reloadEndDelay: 0.3
+  _recoilPitch: 4
+  _recoilYaw: 0.8
+  _recoilRecoverySpeed: 10
+  _sprintToFireDelay: 0.18
+  _shootingMovementMultiplier: 0.75
+  _fireSound: {fileID: 0}
+  _dryFireSound: {fileID: 0}
+  _reloadSound: {fileID: 0}
+  _reloadStartSound: {fileID: 0}
+  _reloadInsertSound: {fileID: 0}
+  _reloadEndSound: {fileID: 0}
+  _chargeStartSound: {fileID: 0}
+  _chargeReadySound: {fileID: 0}
+  _muzzleFlashPrefab: {fileID: 0}
+  _bulletTracerPrefab: {fileID: 0}
+  _impactEffectPrefab: {fileID: 0}

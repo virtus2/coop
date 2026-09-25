@@ -85,7 +85,13 @@ public class PlayerController : NetworkBehaviour
     private float _baseFov;
     private bool _isBaseFovCached;
 
-    public bool IsSprinting => _isSprinting;
+    private readonly NetworkVariable<bool> _networkIsSprinting = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public bool IsSprinting => (!IsSpawned || IsOwner) ? _isSprinting : _networkIsSprinting.Value;
     public float CurrentStamina => _currentStamina;
     public float MaxStamina => _maxStamina;
 
@@ -425,6 +431,11 @@ public class PlayerController : NetworkBehaviour
 
         if (_characterController == null || !_characterController.enabled || !_isInputEnabled)
         {
+            if (_isSprinting)
+            {
+                _isSprinting = false;
+                UpdateSprintSync();
+            }
             return;
         }
 
@@ -432,6 +443,15 @@ public class PlayerController : NetworkBehaviour
         HandleMovement();
         UpdateStamina();
         UpdateCameraFov();
+        UpdateSprintSync();
+    }
+
+    private void UpdateSprintSync()
+    {
+        if (IsSpawned && IsOwner && _networkIsSprinting.Value != _isSprinting)
+        {
+            _networkIsSprinting.Value = _isSprinting;
+        }
     }
 
     /// <summary>
@@ -528,6 +548,7 @@ public class PlayerController : NetworkBehaviour
     {
         _isSprinting = false;
         _sprintInterruptTimer = Mathf.Max(_sprintInterruptTimer, blockDuration);
+        UpdateSprintSync();
     }
 
     /// <summary>
