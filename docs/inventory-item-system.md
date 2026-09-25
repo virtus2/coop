@@ -28,10 +28,19 @@ flowchart TD
         ※ 과거 액션 스크립트 배제, 순수 물리 객체화"]
     end
 
-    subgraph PlayerInventorySpace["3. 인벤토리 및 뷰모델 계층 (Player)"]
-        PI["PlayerInventory
-        - 30칸 보관함 + 9칸 핫바(Toolbar)
-        - 슬롯 스택, 스왑, 핫바 선택 관리"]
+    subgraph PlayerSessionSpace["3. 플레이어 세션 계층 (NetworkPlayer)"]
+        NP["NetworkPlayer (PlayerSessionPrefab)
+        - 접속자 세션 주체 (SpawnAsPlayerObject)
+        - 씬 전환 및 사망 시에도 영구 유지"]
+        PI["PlayerInventory (플레이어 귀속 영구 인벤토리)
+        - 20칸 보관함 + 10칸 핫바(Toolbar)
+        - 캐릭터 사망/디스폰 시에도 인벤토리 데이터 보존"]
+        NP --> PI
+    end
+
+    subgraph CharacterSpace["4. 월드 캐릭터 계층 (PlayerCharacter / PlayerDummyPrefab)"]
+        PC["PlayerCharacter (PlayerDummyPrefab)
+        - 물리 이동, 스태미나, 1P/3P 머리 회전, 피격"]
         PH["PlayerItemHolder (단일 소켓 HeldItemVisual)
         - Instantiate/Destroy 0회
         - MeshFilter / MeshRenderer 교체 방식
@@ -40,10 +49,12 @@ flowchart TD
         - E키 줍기 / G키 물리 투척
         - ItemActionType 기반 액션 라우팅
         - IFireable (사격), IUsable (홀드 사용)"]
-        PI --> PH
+        PC --> PH
         PH --> PA
     end
 
+    NP -.->|"빙의 (Possess) / 언포제스 (Unpossess)"| PC
+    PI -->|"선택 툴바 슬롯 동기화"| PH
     WP -->|"E키 줍기 (서버 Despawn)"| PI
     PH -->|"G키 투척 (서버 Spawn)"| WP
     DB -.->|"데이터 제공"| PH
@@ -51,14 +62,17 @@ flowchart TD
 ```
 
 ### 핵심 설계 원칙
-1. **단일 소켓 메쉬 교체 아키텍처 (Single-Socket Held Visual):**
+1. **플레이어 세션 귀속 인벤토리 (Session-Persistent Inventory):**
+   - `PlayerInventory`는 월드 캐릭터가 아닌 **`NetworkPlayer` 세션 객체**에 귀속됩니다. 캐릭터가 사망하거나 디스폰되어도 소지품 데이터는 그대로 유지됩니다.
+   - 캐릭터가 월드에 존재하지 않는 상태(관전/리스폰 대기)에서는 `Tab` 키를 통한 인벤토리 열람 및 숫자키(1~0) 툴바 조작이 자동으로 차단됩니다.
+2. **단일 소켓 메쉬 교체 아키텍처 (Single-Socket Held Visual):**
    - 아이템마다 손 전용 프리팹(`Held_*.prefab`)을 생성/인스턴스화/파괴하지 않습니다.
    - 플레이어 손(`HoldPoint`)에 상시 부착된 단일 `HeldItemVisual`의 `MeshFilter.sharedMesh`와 `MeshRenderer.sharedMaterial`만 교체하여 **런타임 GC Alloc 0회 및 로드 딜레이 0초**를 달성했습니다.
-2. **순수 `PickableItem` 월드 객체 (Pure World Object):**
+3. **순수 `PickableItem` 월드 객체 (Pure World Object):**
    - 월드에 배치되거나 투척되는 오브젝트는 `SampleGunItem` 등의 기능 스크립트를 포함하지 않고, 순수한 물리/네트워크 컴포넌트와 [`PickableItem`](file:///c:/unity-projects/coop/Assets/Scripts/PickableItem.cs)만 가집니다.
-3. **대규모 물리 멀티플레이어 최적화:**
+4. **대규모 물리 멀티플레이어 최적화:**
    - 수십~수백 개의 아이템이 드롭되어도 성능 저하가 없도록 물리 수면(Sleep & Freeze), 레이어 충돌 격리, 거리 기반 LOD/컬링, GPU Instancing을 기본 내장했습니다.
-4. **NGO 기반 완전 동기화:**
+5. **NGO 기반 완전 동기화:**
    - 호스트와 클라이언트 간에 물리 궤적(NetworkRigidbody), 손에 든 아이템 외형(NetworkVariable), 슬롯 조작이 오차 없이 일치합니다.
 
 ---

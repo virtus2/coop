@@ -282,15 +282,23 @@ public class SaveLoadManager : MonoBehaviour
 
         if (data != null)
         {
+            // playerObj가 NetworkPlayer인 경우 조종 중인 PlayerCharacter를 대상으로 지정
+            NetworkObject targetObj = playerObj;
+            var netPlayer = playerObj.GetComponent<NetworkPlayer>();
+            if (netPlayer != null && netPlayer.CurrentCharacter != null)
+            {
+                targetObj = netPlayer.CurrentCharacter.NetworkObject;
+            }
+
             // 서버 측 CharacterController 일시 비활성화 후 위치 및 회전 설정
-            var cc = playerObj.GetComponent<CharacterController>();
+            var cc = targetObj.GetComponent<CharacterController>();
             if (cc != null)
             {
                 cc.enabled = false;
             }
 
-            playerObj.transform.position = data.position;
-            playerObj.transform.rotation = Quaternion.Euler(data.rotation);
+            targetObj.transform.position = data.position;
+            targetObj.transform.rotation = Quaternion.Euler(data.rotation);
 
             if (cc != null)
             {
@@ -307,14 +315,14 @@ public class SaveLoadManager : MonoBehaviour
             Debug.Log($"[SaveLoadManager] 플레이어({pId}, ClientId: {clientId})의 저장된 상태를 서버에서 설정했습니다: 위치 {data.position}, 각도 {data.rotation}, 카메라 {data.cameraPitch}");
 
             // 소유 클라이언트에게 텔레포트 명령 (ClientNetworkTransform 클라이언트 권한 동기화)
-            var playerController = playerObj.GetComponent<PlayerController>();
-            if (playerController != null)
+            var playerCharacter = targetObj.GetComponent<PlayerCharacter>();
+            if (playerCharacter != null)
             {
                 Quaternion rot = Quaternion.Euler(data.rotation);
                 if (clientId == NetworkManager.Singleton.LocalClientId)
                 {
                     // 서버 본인(호스트)인 경우 로컬에서 즉시 Teleport 실행
-                    playerController.Teleport(data.position, rot, data.cameraPitch);
+                    playerCharacter.Teleport(data.position, rot, data.cameraPitch);
                 }
                 else
                 {
@@ -326,7 +334,7 @@ public class SaveLoadManager : MonoBehaviour
                             TargetClientIds = new[] { clientId }
                         }
                     };
-                    playerController.TeleportClientRpc(data.position, rot, data.cameraPitch, clientRpcParams);
+                    playerCharacter.TeleportClientRpc(data.position, rot, data.cameraPitch, clientRpcParams);
                 }
             }
         }

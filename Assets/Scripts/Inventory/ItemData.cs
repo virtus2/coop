@@ -35,12 +35,28 @@ public class ItemData : ScriptableObject
     [SerializeField] private Mesh _heldMesh;
     [Tooltip("손에 들었을 때 적용할 머티리얼")]
     [SerializeField] private Material _heldMaterial;
-    [Tooltip("손 소켓(HoldPoint) 기준 로컬 위치 오프셋")]
+    [Tooltip("손 소켓(HoldPoint) 기준 로컬 위치 오프셋 (1인칭)")]
     [SerializeField] private Vector3 _heldLocalPosition = Vector3.zero;
-    [Tooltip("손 소켓(HoldPoint) 기준 로컬 회전 오프셋 (오일러 각)")]
+    [Tooltip("손 소켓(HoldPoint) 기준 로컬 회전 오프셋 (1인칭, 오일러 각)")]
     [SerializeField] private Vector3 _heldLocalRotation = Vector3.zero;
-    [Tooltip("손 소켓(HoldPoint) 기준 로컬 스케일")]
+    [Tooltip("손 소켓(HoldPoint) 기준 로컬 스케일 (1인칭)")]
     [SerializeField] private Vector3 _heldLocalScale = Vector3.one;
+
+    [Header("3P Held Visual Settings (3인칭 오른손 소켓 전용)")]
+    [Tooltip("3인칭 손 소켓 기준 로컬 위치 오프셋 (기본값과 다를 때 적용)")]
+    [SerializeField] private Vector3 _heldLocalPosition3P = Vector3.zero;
+    [Tooltip("3인칭 손 소켓 기준 로컬 회전 오프셋 (3인칭, 오일러 각)")]
+    [SerializeField] private Vector3 _heldLocalRotation3P = Vector3.zero;
+    [Tooltip("3인칭 손 소켓 기준 로컬 스케일")]
+    [SerializeField] private Vector3 _heldLocalScale3P = Vector3.one;
+
+    [Header("Two-Bone IK Settings (왼손 파지 그립)")]
+    [Tooltip("양손 무기일 때 왼손 IK를 적용할지 여부")]
+    [SerializeField] private bool _useLeftHandIK = false;
+    [Tooltip("무기 기준 왼손 핸드가드 그립 로컬 위치 오프셋")]
+    [SerializeField] private Vector3 _leftHandIKLocalPosition = new Vector3(-0.05f, -0.05f, 0.35f);
+    [Tooltip("무기 기준 왼손 핸드가드 그립 로컬 회전 오프셋 (오일러 각)")]
+    [SerializeField] private Vector3 _leftHandIKLocalRotation = Vector3.zero;
 
     [Header("Action Settings")]
     [Tooltip("손에 들었을 때 좌클릭/홀드로 실행할 액션 유형")]
@@ -65,6 +81,15 @@ public class ItemData : ScriptableObject
     public Vector3 HeldLocalPosition => _heldLocalPosition;
     public Vector3 HeldLocalRotation => _heldLocalRotation;
     public Vector3 HeldLocalScale => _heldLocalScale == Vector3.zero ? Vector3.one : _heldLocalScale;
+
+    public Vector3 HeldLocalPosition3P => _heldLocalPosition3P != Vector3.zero ? _heldLocalPosition3P : _heldLocalPosition;
+    public Vector3 HeldLocalRotation3P => _heldLocalRotation3P != Vector3.zero ? _heldLocalRotation3P : _heldLocalRotation;
+    public Vector3 HeldLocalScale3P => _heldLocalScale3P == Vector3.zero ? HeldLocalScale : _heldLocalScale3P;
+
+    public bool UseLeftHandIK => _useLeftHandIK;
+    public Vector3 LeftHandIKLocalPosition => _leftHandIKLocalPosition;
+    public Vector3 LeftHandIKLocalRotation => _leftHandIKLocalRotation;
+
     public ItemActionType ActionType => _actionType;
     public PlaceableObject PlaceableBuildingPrefab => _placeableBuildingPrefab;
 

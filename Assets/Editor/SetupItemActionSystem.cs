@@ -77,7 +77,6 @@ public static class SetupItemActionSystem
 
         go.AddComponent<NetworkObject>();
         var pickable = go.AddComponent<PickableItem>();
-        go.AddComponent<SampleGunItem>();
 
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
         typeof(PickableItem).GetField("_promptText", flags)?.SetValue(pickable, "샘플 권총 들기");
@@ -135,7 +134,6 @@ public static class SetupItemActionSystem
 
         go.AddComponent<NetworkObject>();
         var pickable = go.AddComponent<PickableItem>();
-        go.AddComponent<SampleChargedWeaponItem>();
 
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
         typeof(PickableItem).GetField("_promptText", flags)?.SetValue(pickable, "차지 라이플 들기");

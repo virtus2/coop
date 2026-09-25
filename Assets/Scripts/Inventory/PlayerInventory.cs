@@ -177,9 +177,20 @@ public class PlayerInventory : NetworkBehaviour
 
     /// <summary>
     /// New Input System의 Keyboard 입력을 검사하여 숫자키 1~0 입력 시 툴바 슬롯을 변경합니다.
+    /// 캐릭터가 월드에 존재하지 않거나 입력이 비활성화된 경우 입력을 무시합니다.
     /// </summary>
     private void CheckToolbarNumberInput()
     {
+        // 1. 캐릭터 부재 시 툴바 조작 차단
+        if (NetworkPlayer.LocalInstance != null && !NetworkPlayer.LocalInstance.HasCharacter)
+        {
+            return;
+        }
+        if (PlayerCharacter.LocalInstance == null || !PlayerCharacter.LocalInstance.IsInputEnabled)
+        {
+            return;
+        }
+
         var keyboard = Keyboard.current;
         if (keyboard == null)
         {
@@ -261,6 +272,10 @@ public class PlayerInventory : NetworkBehaviour
         if (_itemHolder == null)
         {
             _itemHolder = GetComponent<PlayerItemHolder>();
+            if (_itemHolder == null && NetworkPlayer.LocalInstance != null && NetworkPlayer.LocalInstance.CurrentCharacter != null)
+            {
+                _itemHolder = NetworkPlayer.LocalInstance.CurrentCharacter.GetComponent<PlayerItemHolder>();
+            }
         }
 
         if (_itemHolder != null && _itemHolder.IsHoldingWorldItem)

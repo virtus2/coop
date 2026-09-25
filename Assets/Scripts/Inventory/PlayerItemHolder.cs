@@ -13,6 +13,10 @@ public class PlayerItemHolder : NetworkBehaviour
     private PlayerInventory _inventory;
     private PlayerInteraction _interaction;
 
+    [Header("Sockets")]
+    [Tooltip("3인칭 캐릭터 모델의 오른손 소켓 (비어있으면 'HoldPoint3P' 또는 'RightHand'를 자동 탐색)")]
+    [SerializeField] private Transform _thirdPersonHoldPoint;
+
     // 플레이어 캐릭터에 상시 부착된 단일 비주얼 소켓 오브젝트
     private GameObject _heldVisualGO;
     private MeshFilter _heldMeshFilter;
@@ -33,6 +37,7 @@ public class PlayerItemHolder : NetworkBehaviour
     public bool IsHoldingItem => _currentHeldItemData != null;
     public bool IsHoldingWorldItem => _pendingHeldItemData != null;
     public string NetworkHeldItemId => _networkHeldItemId.Value.ToString();
+    public Transform ThirdPersonHoldPoint => _thirdPersonHoldPoint;
 
     private void Awake()
     {
@@ -42,8 +47,44 @@ public class PlayerItemHolder : NetworkBehaviour
 
     private void EnsureComponents()
     {
-        if (_inventory == null) _inventory = GetComponent<PlayerInventory>();
+        if (_inventory == null)
+        {
+            _inventory = GetComponent<PlayerInventory>();
+            if (_inventory == null)
+            {
+                var character = GetComponent<PlayerCharacter>();
+                if (character != null && character.Inventory != null)
+                {
+                    _inventory = character.Inventory;
+                }
+                else if (IsOwner && PlayerInventory.LocalInstance != null)
+                {
+                    _inventory = PlayerInventory.LocalInstance;
+                }
+            }
+        }
         if (_interaction == null) _interaction = GetComponent<PlayerInteraction>();
+
+        var pc = GetComponent<PlayerCharacter>();
+        if (pc != null)
+        {
+            pc.OnInventoryBound -= HandleInventoryBound;
+            pc.OnInventoryBound += HandleInventoryBound;
+        }
+    }
+
+    private void HandleInventoryBound(PlayerInventory inventory)
+    {
+        _inventory = inventory;
+        if (!IsSpawned || IsOwner)
+        {
+            if (_inventory != null)
+            {
+                _inventory.OnSelectedToolbarSlotChanged -= HandleSelectedSlotChanged;
+                _inventory.OnSelectedToolbarSlotChanged += HandleSelectedSlotChanged;
+                UpdateHeldItem(_inventory.SelectedToolbarIndex);
+            }
+        }
     }
 
     private void EnsureHeldVisualSocket()
@@ -304,9 +345,9 @@ public class PlayerItemHolder : NetworkBehaviour
         _heldMeshFilter.sharedMesh = mesh;
         _heldMeshRenderer.sharedMaterial = mat;
         _heldMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; // 3인칭은 그림자 켬
-        _heldVisualGO.transform.localPosition = itemData.HeldLocalPosition;
-        _heldVisualGO.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation);
-        _heldVisualGO.transform.localScale = itemData.HeldLocalScale;
+        _heldVisualGO.transform.localPosition = itemData.HeldLocalPosition3P;
+        _heldVisualGO.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation3P);
+        _heldVisualGO.transform.localScale = itemData.HeldLocalScale3P;
         _heldVisualGO.SetActive(true);
 
         NotifyCombatHeldItemChanged(itemData);
@@ -644,6 +685,30 @@ public class PlayerItemHolder : NetworkBehaviour
 
     private Transform GetHoldTarget()
     {
+        // 원격 플레이어인 경우 3인칭 손 소켓을 우선적으로 반환
+        if (IsSpawned && !IsOwner)
+        {
+            if (_thirdPersonHoldPoint != null)
+            {
+                return _thirdPersonHoldPoint;
+            }
+
+            Transform found3P = FindDeepChild(transform, "HoldPoint3P");
+            if (found3P != null)
+            {
+                _thirdPersonHoldPoint = found3P;
+                return _thirdPersonHoldPoint;
+            }
+
+            Transform rightHand = FindDeepChild(transform, "RightHand");
+            if (rightHand != null)
+            {
+                _thirdPersonHoldPoint = rightHand;
+                return _thirdPersonHoldPoint;
+            }
+        }
+
+        // 로컬 플레이어 (또는 3P 소켓이 없는 레거시 프리팹): 1인칭 카메라 앞 소켓 반환
         if (_interaction != null && _interaction.HoldPoint != null)
         {
             return _interaction.HoldPoint;
@@ -662,6 +727,17 @@ public class PlayerItemHolder : NetworkBehaviour
         }
 
         return transform;
+    }
+
+    private static Transform FindDeepChild(Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        foreach (Transform child in parent)
+        {
+            Transform result = FindDeepChild(child, name);
+            if (result != null) return result;
+        }
+        return null;
     }
 
     #region RPCs

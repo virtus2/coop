@@ -86,7 +86,7 @@ public static class HeldPositionEditSceneSetup
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(floor, targetScene);
 
             Debug.Log("[HeldPositionEditSceneSetup] 4. Player 인스턴스화");
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerPrefab.prefab");
+            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerDummyPrefab.prefab");
             GameObject playerInstance = null;
             if (playerPrefab != null)
             {
@@ -144,12 +144,7 @@ public static class HeldPositionEditSceneSetup
             tweaker.HoldPoint = holdPoint;
             tweaker.PreviewCamera = cam;
 
-            ItemData sampleGun = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/ItemData/SampleGunItemData.asset");
-            if (sampleGun == null)
-            {
-                sampleGun = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleGunItemData.asset");
-            }
-
+            ItemData sampleGun = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/Gun_TacticalPistol.asset");
             if (sampleGun != null)
             {
                 tweaker.TargetItemData = sampleGun;

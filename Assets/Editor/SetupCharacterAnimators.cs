@@ -1,4 +1,4 @@
-﻿using Unity.Netcode.Components;
+using Unity.Netcode.Components;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +11,7 @@ using UnityEngine;
 public static class SetupCharacterAnimators
 {
     private const string PLAYER_PREFAB_PATH = "Assets/Prefabs/PlayerPrefab.prefab";
+    private const string DUMMY_PLAYER_PREFAB_PATH = "Assets/Prefabs/PlayerDummyPrefab.prefab";
     private const string MONSTER_PREFAB_PATH = "Assets/Prefabs/MonsterPrefab.prefab";
     private const string NPC_PREFAB_PATH = "Assets/Prefabs/NPCPrefab.prefab";
 
@@ -34,8 +35,9 @@ public static class SetupCharacterAnimators
         // 1. Monster & NPC 프리팹 재생성 (CreateWorldCharacters에 Animator 및 NetworkAnimator 포함)
         CreateWorldCharacters.CreateAllPrefabs();
 
-        // 2. PlayerPrefab 설정
-        SetupPlayerAnimatorPrefab();
+        // 2. PlayerPrefab 및 PlayerDummyPrefab 설정
+        SetupPlayerAnimatorPrefab(PLAYER_PREFAB_PATH);
+        SetupPlayerAnimatorPrefab(DUMMY_PLAYER_PREFAB_PATH);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -43,12 +45,12 @@ public static class SetupCharacterAnimators
         Debug.Log("<color=green>[SetupCharacterAnimators]</color> 모든 캐릭터(Player, Monster, NPC)에 Animator 및 멀티플레이어 동기화 컴포넌트 설정이 완료되었습니다!");
     }
 
-    private static void SetupPlayerAnimatorPrefab()
+    private static void SetupPlayerAnimatorPrefab(string prefabPath)
     {
-        GameObject prefabRoot = PrefabUtility.LoadPrefabContents(PLAYER_PREFAB_PATH);
+        GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
         if (prefabRoot == null)
         {
-            Debug.LogWarning($"[SetupCharacterAnimators] 플레이어 프리팹을 찾을 수 없습니다: {PLAYER_PREFAB_PATH}");
+            Debug.LogWarning($"[SetupCharacterAnimators] 플레이어 프리팹을 찾을 수 없습니다: {prefabPath}");
             return;
         }
 

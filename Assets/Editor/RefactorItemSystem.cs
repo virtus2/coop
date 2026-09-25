@@ -83,9 +83,9 @@ public static class RefactorItemSystem
         }
 
         // 5. 월드 프리팹 정리 (액션 스크립트 제거 & PickableItem.ItemData 연결)
-        CleanWorldPrefab("Assets/Prefabs/SampleGun.prefab", mainGunData, typeof(SampleGunItem));
+        CleanWorldPrefab("Assets/Prefabs/SampleGun.prefab", mainGunData, null);
         CleanWorldPrefab("Assets/Prefabs/SampleMedkit.prefab", mainMedkitData, typeof(SampleMedkitItem));
-        CleanWorldPrefab("Assets/Prefabs/SampleChargedWeapon.prefab", mainChargedData, typeof(SampleChargedWeaponItem));
+        CleanWorldPrefab("Assets/Prefabs/SampleChargedWeapon.prefab", mainChargedData, null);
         CleanWorldPrefab("Assets/Prefabs/PickableBox.prefab", mainBoxData, null);
 
         // 6. Assets/Prefabs/Held 디렉토리 및 프리팹 삭제
@@ -252,9 +252,7 @@ public static class RefactorItemSystem
                 var pickable = prefab.GetComponent<PickableItem>();
                 Assert(pickable != null, $"{path}: PickableItem 컴포넌트 부착 확인");
                 Assert(pickable != null && pickable.ItemData != null, $"{path}: PickableItem.ItemData 연결 확인");
-                Assert(prefab.GetComponent<SampleGunItem>() == null, $"{path}: SampleGunItem 컴포넌트 없음 확인");
                 Assert(prefab.GetComponent<SampleMedkitItem>() == null, $"{path}: SampleMedkitItem 컴포넌트 없음 확인");
-                Assert(prefab.GetComponent<SampleChargedWeaponItem>() == null, $"{path}: SampleChargedWeaponItem 컴포넌트 없음 확인");
             }
         }
 

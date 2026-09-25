@@ -97,6 +97,12 @@ public class InventoryUIController : MonoBehaviour
             TrySubscribeToPlayerInventory();
         }
 
+        // 캐릭터가 부재중(사망/스폰 대기)인데 인벤토리가 열려있다면 즉시 닫기
+        if (_isOpen && (PlayerCharacter.LocalInstance == null || (NetworkPlayer.LocalInstance != null && !NetworkPlayer.LocalInstance.HasCharacter)))
+        {
+            CloseInventory();
+        }
+
         // Tab 키를 통한 인벤토리 열기/닫기 토글
         if (Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame)
         {
@@ -211,11 +217,20 @@ public class InventoryUIController : MonoBehaviour
         if (_isOpen)
         {
             CloseInventory();
+            return;
         }
-        else
+
+        // 캐릭터가 월드에 존재하지 않으면 인벤토리를 열 수 없음
+        if (NetworkPlayer.LocalInstance != null && !NetworkPlayer.LocalInstance.HasCharacter)
         {
-            OpenInventory();
+            return;
         }
+        if (PlayerCharacter.LocalInstance == null)
+        {
+            return;
+        }
+
+        OpenInventory();
     }
 
     public void OpenInventory()

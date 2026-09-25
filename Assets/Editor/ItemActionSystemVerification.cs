@@ -58,9 +58,9 @@ public static class ItemActionSystemVerification
             var itemHolder = playerGO.AddComponent<PlayerItemHolder>();
             var interactor = playerGO.AddComponent<PlayerInteraction>();
 
-            ItemData gunItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleGunItemData.asset");
+            ItemData gunItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/Gun_TacticalPistol.asset");
             ItemData medkitItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleMedkitItemData.asset");
-            ItemData chargedItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/SampleChargedWeaponItemData.asset");
+            ItemData chargedItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/Gun_ChargeLaser.asset");
             ItemData boxItemData = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/ItemData/PickableBoxItemData.asset");
 
             GameObject gunGO = new GameObject("TestGun");
@@ -152,7 +152,7 @@ public static class ItemActionSystemVerification
     public static void SimulatePickUpAndFireGun()
     {
         var player = GameObject.Find("Player (Direct Play)");
-        var gun = GameObject.Find("SampleGun_Instance");
+        var gun = GameObject.Find("Gun_TacticalPistol_Instance") ?? GameObject.Find("SampleGun_Instance");
         if (player != null && gun != null)
         {
             var interactor = player.GetComponent<PlayerInteraction>();
@@ -199,7 +199,7 @@ public static class ItemActionSystemVerification
     public static void SimulatePickUpAndActionCharged()
     {
         var player = GameObject.Find("Player (Direct Play)");
-        var charged = GameObject.Find("SampleChargedWeapon_Instance");
+        var charged = GameObject.Find("Gun_ChargeLaser_Instance") ?? GameObject.Find("SampleChargedWeapon_Instance");
         if (player != null && charged != null)
         {
             var interactor = player.GetComponent<PlayerInteraction>();

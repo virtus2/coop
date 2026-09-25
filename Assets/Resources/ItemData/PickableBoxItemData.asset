@@ -23,6 +23,12 @@ MonoBehaviour:
   _heldLocalPosition: {x: 0, y: 0, z: 0.2}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
   _heldLocalScale: {x: 0.4, y: 0.4, z: 0.4}
+  _heldLocalPosition3P: {x: 0, y: 0, z: 0}
+  _heldLocalRotation3P: {x: 0, y: 0, z: 0}
+  _heldLocalScale3P: {x: 1, y: 1, z: 1}
+  _useLeftHandIK: 0
+  _leftHandIKLocalPosition: {x: 0, y: 0, z: 0}
+  _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
   _actionType: 0
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 7568627917206836868, guid: 6554b03961f90734c9fae3f9ac741486, type: 3}

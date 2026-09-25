@@ -22,11 +22,21 @@ public class GameSceneBootstrap : MonoBehaviour
 
             if (_playerPrefab == null)
             {
-                _playerPrefab = Resources.Load<GameObject>("PlayerPrefab");
+                _playerPrefab = Resources.Load<GameObject>("PlayerDummyPrefab");
+                if (_playerPrefab == null) _playerPrefab = Resources.Load<GameObject>("PlayerCharacterPrefab");
+                if (_playerPrefab == null) _playerPrefab = Resources.Load<GameObject>("PlayerPrefab");
 #if UNITY_EDITOR
                 if (_playerPrefab == null)
                 {
-                    _playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerPrefab.prefab");
+                    _playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerDummyPrefab.prefab");
+                    if (_playerPrefab == null)
+                    {
+                        _playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerCharacterPrefab.prefab");
+                    }
+                    if (_playerPrefab == null)
+                    {
+                        _playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerPrefab.prefab");
+                    }
                 }
 #endif
             }

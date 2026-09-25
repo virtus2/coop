@@ -25,5 +25,5 @@ MonoBehaviour:
   _heldLocalScale: {x: 1, y: 1, z: 1}
   _actionType: 0
   _placeableBuildingPrefab: {fileID: 0}
-  _worldPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 7696914096016058200, guid: e21048aec52c7f048946fd7cd7300e89, type: 3}
   _holdPrefab: {fileID: 0}

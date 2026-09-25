@@ -9,11 +9,11 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class InventorySystemVerification
 {
-    private const string ITEM_GUN_PATH = "Assets/Resources/ItemData/SampleGunItemData.asset";
+    private const string ITEM_GUN_PATH = "Assets/Resources/ItemData/Gun_TacticalPistol.asset";
     private const string ITEM_MEDKIT_PATH = "Assets/Resources/ItemData/SampleMedkitItemData.asset";
-    private const string ITEM_CHARGED_PATH = "Assets/Resources/ItemData/SampleChargedWeaponItemData.asset";
+    private const string ITEM_CHARGED_PATH = "Assets/Resources/ItemData/Gun_ChargeLaser.asset";
     private const string ITEM_BOX_PATH = "Assets/Resources/ItemData/PickableBoxItemData.asset";
-    private const string PLAYER_PREFAB_PATH = "Assets/Prefabs/PlayerPrefab.prefab";
+    private const string PLAYER_PREFAB_PATH = "Assets/Prefabs/PlayerDummyPrefab.prefab";
     private const string GAME_SCENE_PATH = "Assets/Scenes/GameScene.unity";
 
     [MenuItem("Tools/Verify Inventory System")]
@@ -87,7 +87,7 @@ public static class InventorySystemVerification
     {
         ItemDatabase.EnsureLoaded();
 
-        string[] requiredIds = { "item_gun", "item_medkit", "item_charged_weapon", "item_box" };
+        string[] requiredIds = { "Gun_TacticalPistol", "item_medkit", "Gun_ChargeLaser", "item_box" };
         foreach (var id in requiredIds)
         {
             var item = ItemDatabase.GetItem(id);
@@ -104,28 +104,29 @@ public static class InventorySystemVerification
 
     private static bool VerifyPlayerPrefab()
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PLAYER_PREFAB_PATH);
-        if (prefab == null)
+        var dummyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerDummyPrefab.prefab");
+        var sessionPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerSessionPrefab.prefab");
+        var legacyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerPrefab.prefab");
+
+        bool hasInventory = (sessionPrefab != null && sessionPrefab.GetComponent<PlayerInventory>() != null) ||
+                            (legacyPrefab != null && legacyPrefab.GetComponent<PlayerInventory>() != null);
+
+        bool hasHolder = (dummyPrefab != null && dummyPrefab.GetComponent<PlayerItemHolder>() != null) ||
+                         (legacyPrefab != null && legacyPrefab.GetComponent<PlayerItemHolder>() != null);
+
+        if (!hasInventory)
         {
-            Debug.LogError($"[Verification] {PLAYER_PREFAB_PATH}을 찾을 수 없습니다.");
+            Debug.LogError("[Verification] 플레이어 프리팹(PlayerSessionPrefab 또는 PlayerPrefab)에 PlayerInventory 컴포넌트가 없습니다.");
             return false;
         }
 
-        var inventory = prefab.GetComponent<PlayerInventory>();
-        if (inventory == null)
+        if (!hasHolder)
         {
-            Debug.LogError("[Verification] PlayerPrefab에 PlayerInventory 컴포넌트가 없습니다.");
+            Debug.LogError("[Verification] 플레이어 프리팹(PlayerDummyPrefab 또는 PlayerPrefab)에 PlayerItemHolder 컴포넌트가 없습니다.");
             return false;
         }
 
-        var holder = prefab.GetComponent<PlayerItemHolder>();
-        if (holder == null)
-        {
-            Debug.LogError("[Verification] PlayerPrefab에 PlayerItemHolder 컴포넌트가 없습니다.");
-            return false;
-        }
-
-        Debug.Log("<color=green>[PASS]</color> PlayerPrefab의 PlayerInventory 및 PlayerItemHolder 부착 확인 완료.");
+        Debug.Log("<color=green>[PASS]</color> 플레이어 프리팹의 PlayerInventory 및 PlayerItemHolder 부착 확인 완료.");
         return true;
     }
 

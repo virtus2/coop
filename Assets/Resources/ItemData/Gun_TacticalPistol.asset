@@ -23,19 +23,35 @@ MonoBehaviour:
   _heldLocalPosition: {x: 0, y: 0, z: 0}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
   _heldLocalScale: {x: 0.1, y: 0.1, z: 0.29}
+  _heldLocalPosition3P: {x: 0, y: 0, z: 0}
+  _heldLocalRotation3P: {x: 0, y: 0, z: 0}
+  _heldLocalScale3P: {x: 1, y: 1, z: 1}
+  _useLeftHandIK: 0
+  _leftHandIKLocalPosition: {x: 0, y: 0, z: 0}
+  _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
   _actionType: 1
   _placeableBuildingPrefab: {fileID: 0}
-  _worldPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 7605198953023051987, guid: 8352efaeb04824544b71ebf90e651768, type: 3}
   _holdPrefab: {fileID: 0}
   _baseDamage: 35
   _fireInterval: 0.22
   _maxRange: 100
   _fireMode: 0
+  _isShotgun: 0
+  _pelletCount: 8
+  _spreadAngle: 7
+  _damageFalloffStartRange: 3
+  _damageFalloffEndRange: 10
+  _minDamagePerPellet: 1
   _minChargeDuration: 1
   _chargedDamageMultiplier: 2
   _magazineCapacity: 12
   _reloadDuration: 1.5
   _requiredAmmoItemId: Ammo_Pistol
+  _useShellByShellReload: 0
+  _reloadStartDelay: 0.35
+  _reloadInsertInterval: 0.5
+  _reloadEndDelay: 0.3
   _recoilPitch: 1.8
   _recoilYaw: 0.2
   _recoilRecoverySpeed: 12
@@ -44,6 +60,9 @@ MonoBehaviour:
   _fireSound: {fileID: 0}
   _dryFireSound: {fileID: 0}
   _reloadSound: {fileID: 0}
+  _reloadStartSound: {fileID: 0}
+  _reloadInsertSound: {fileID: 0}
+  _reloadEndSound: {fileID: 0}
   _chargeStartSound: {fileID: 0}
   _chargeReadySound: {fileID: 0}
   _muzzleFlashPrefab: {fileID: 0}

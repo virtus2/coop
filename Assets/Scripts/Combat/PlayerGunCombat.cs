@@ -47,6 +47,7 @@ public class PlayerGunCombat : NetworkBehaviour
     [SerializeField] private bool _autoEquipGunsOnStart = true;
 
     private Camera _mainCamera;
+    private Animator _animator;
     private GunItemData _currentGunData;
     private InventorySlot _currentGunSlot;
 
@@ -149,9 +150,53 @@ public class PlayerGunCombat : NetworkBehaviour
     private void Awake()
     {
         if (_playerController == null) _playerController = GetComponent<PlayerController>();
-        if (_playerInventory == null) _playerInventory = GetComponent<PlayerInventory>();
+        EnsureInventoryReference();
         if (_playerItemHolder == null) _playerItemHolder = GetComponent<PlayerItemHolder>();
         if (_playerInteraction == null) _playerInteraction = GetComponent<PlayerInteraction>();
+        _animator = GetComponent<Animator>();
+
+        var pc = GetComponent<PlayerCharacter>();
+        if (pc != null)
+        {
+            pc.OnInventoryBound -= HandleInventoryBound;
+            pc.OnInventoryBound += HandleInventoryBound;
+        }
+    }
+
+    private void EnsureInventoryReference()
+    {
+        if (_playerInventory == null)
+        {
+            _playerInventory = GetComponent<PlayerInventory>();
+            if (_playerInventory == null)
+            {
+                var pc = GetComponent<PlayerCharacter>();
+                if (pc != null && pc.Inventory != null)
+                {
+                    _playerInventory = pc.Inventory;
+                }
+                else if (IsOwner && PlayerInventory.LocalInstance != null)
+                {
+                    _playerInventory = PlayerInventory.LocalInstance;
+                }
+            }
+        }
+    }
+
+    private void HandleInventoryBound(PlayerInventory inventory)
+    {
+        if (_playerInventory != null)
+        {
+            _playerInventory.OnSelectedToolbarSlotChanged -= HandleToolbarSlotChanged;
+            _playerInventory.OnInventoryChanged -= HandleInventoryChanged;
+        }
+        _playerInventory = inventory;
+        if (_playerInventory != null && (!IsSpawned || IsOwner))
+        {
+            _playerInventory.OnSelectedToolbarSlotChanged += HandleToolbarSlotChanged;
+            _playerInventory.OnInventoryChanged += HandleInventoryChanged;
+            CheckCurrentHeldGun();
+        }
     }
 
     private void Start()
@@ -581,6 +626,11 @@ public class PlayerGunCombat : NetworkBehaviour
             Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
         }
 
+        if (_animator != null)
+        {
+            _animator.SetTrigger("Fire");
+        }
+
         // 로컬 8가닥 탄 궤적(Tracer Line) 즉시 렌더링 (0ms 체감)
         Vector3[] dirs = GenerateConeDirections(direction, _currentGunData.SpreadAngle, _currentGunData.PelletCount, seed);
         for (int i = 0; i < dirs.Length; i++)
@@ -612,6 +662,11 @@ public class PlayerGunCombat : NetworkBehaviour
             _playerController.ApplyRecoil(pitch, yaw, _currentGunData.RecoilRecoverySpeed);
         }
 
+        if (_animator != null)
+        {
+            _animator.SetTrigger("Fire");
+        }
+
         // 총구 화염(Muzzle Flash) 로컬 생성
         Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
         if (_currentGunData.MuzzleFlashPrefab != null && holdPoint != null)
@@ -639,6 +694,11 @@ public class PlayerGunCombat : NetworkBehaviour
         if (gunData == null)
         {
             _currentGunSlot = null;
+        }
+
+        if (_animator != null)
+        {
+            _animator.SetInteger("WeaponType", gunData != null ? 1 : 0);
         }
     }
 
@@ -1069,6 +1129,11 @@ public class PlayerGunCombat : NetworkBehaviour
 
         // 차징 중이었다면 취소
         CancelCharge();
+
+        if (_animator != null)
+        {
+            _animator.SetTrigger("Reload");
+        }
 
         // 달리는 도중 재장전 시도 시 달리기 즉시 해제 (E-18)
         if (_playerController != null && _playerController.IsSprinting)

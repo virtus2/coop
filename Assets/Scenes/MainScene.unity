@@ -19929,7 +19929,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.00006866455
+      value: 49.999992
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
@@ -104053,7 +104053,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 517501582}
-    PlayerPrefab: {fileID: 0}
+    PlayerPrefab: {fileID: 7652732003865901689, guid: bdee9f30df3898649a6694b4586cfa14, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 0b2cfc09cf47e0d40b81110380e5a094, type: 2}
@@ -104104,7 +104104,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbbdbeb8dd3290b4998a346759e41482, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSpawner
-  _playerPrefab: {fileID: 3580515817915809303, guid: 632d79e5fac05d34baca8cb6eae3f2ec, type: 3}
+  _characterPrefab: {fileID: 3580515817915809303, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
   _spawnPoints: []
 --- !u!114 &517501584
 MonoBehaviour:

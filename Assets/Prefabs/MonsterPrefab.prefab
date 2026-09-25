@@ -19,7 +19,6 @@ GameObject:
   - component: {fileID: 1970978414179035517}
   - component: {fileID: 4359609863546773572}
   - component: {fileID: 8775160161181122884}
-  - component: {fileID: 3555839437310143857}
   m_Layer: 0
   m_Name: MonsterPrefab
   m_TagString: Untagged
@@ -98,7 +97,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 94971fae821686345a87f5bbde45a95d, type: 2}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -134,13 +133,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4164378133
+  GlobalObjectIdHash: 2389305820
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -259,7 +258,7 @@ Animator:
   m_GameObject: {fileID: 2589591152186656409}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: f48118e5547904046a03b4813dd7f508, type: 2}
+  m_Controller: {fileID: 0}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -319,17 +318,3 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   _minStepInterval: 0.12
---- !u!114 &3555839437310143857
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2589591152186656409}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f706e14d50c7a8c4987227e3b37fbbca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Hitbox
-  _hitboxType: 0
-  _damageableTarget: {fileID: 0}

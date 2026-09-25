@@ -17,11 +17,17 @@ MonoBehaviour:
   _icon: {fileID: 0}
   _description: "12\uAC8C\uC774\uC9C0 \uC0F7\uAC74 \uC258 \uC0B0\uD0C4 \uD0C4\uC57D\uC785\uB2C8\uB2E4."
   _maxStackSize: 24
-  _heldMesh: {fileID: 0}
-  _heldMaterial: {fileID: 0}
+  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMaterial: {fileID: 2100000, guid: fc0bf028688218142b6ca305c951b9af, type: 2}
   _heldLocalPosition: {x: 0, y: 0, z: 0}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
   _heldLocalScale: {x: 1, y: 1, z: 1}
+  _heldLocalPosition3P: {x: 0, y: 0, z: 0}
+  _heldLocalRotation3P: {x: 0, y: 0, z: 0}
+  _heldLocalScale3P: {x: 1, y: 1, z: 1}
+  _useLeftHandIK: 0
+  _leftHandIKLocalPosition: {x: -0.05, y: -0.05, z: 0.35}
+  _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
   _actionType: 0
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 0}

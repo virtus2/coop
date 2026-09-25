@@ -68,6 +68,13 @@
   - [x] 프리팹 생성/파괴 없는 단일 `HeldItemVisual` 메쉬/머티리얼 교체 방식 (GC Alloc 0)
   - [x] `_networkHeldItemId`를 통한 3인칭 원격 플레이어 소지품 외형 동기화
   - [x] 인스펙터 실시간 손 오프셋 튜닝 에디터 툴 제작 (`ItemHoldOffsetTweaker.cs`)
+- [x] **플레이어 세션 & 캐릭터 분리 아키텍처 (`NetworkPlayer.cs`, `PlayerCharacter.cs`, `PlayerCameraController.cs`)**
+  - [x] 접속자 세션 객체(`NetworkPlayer`, `PlayerSessionPrefab`)와 월드 조종 캐릭터(`PlayerCharacter`, `PlayerDummyPrefab`)의 역할 및 생명주기 분리
+  - [x] `PlayerInventory`를 세션 객체(`NetworkPlayer`)에 귀속하여 캐릭터 사망/디스폰 시에도 인벤토리 데이터 영구 보존
+  - [x] `NetworkVariable<NetworkObjectReference>` 기반 안전한 빙의(Possess) 및 언포제스(Unpossess) 파이프라인 구축
+  - [x] 단일 카메라 매니저(`PlayerCameraController.cs`): 캐릭터 조종 시 1인칭 머리 추적 ↔ 캐릭터 부재(사망/스폰 대기) 시 기지 코어(`Containment Core`) 고정 시점 자동 전환
+  - [x] 캐릭터 부재 시 `Tab` 키 인벤토리 열기 및 툴바 숫자키(1~0) 조작 자동 차단
+  - [x] Dummy FBX 완성형 모델(`PlayerDummyPrefab.prefab`)을 메인 캐릭터로 전격 연동 및 구형 프리팹 정리
 - [x] **월드 물리 아이템 상호작용 (`PickableItem.cs`, `PlayerInteraction.cs`)**
   - [x] E키 시선 레이캐스트 아이템 줍기 (서버 Despawn) 및 손에 든 임시 상태 처리
   - [x] 번호키(1~9) 입력 시 지정 핫바 슬롯 보관 (핫바 가득 찰 시 자동 드롭)

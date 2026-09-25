@@ -24,6 +24,7 @@ public class PlayerMeleeCombat : NetworkBehaviour
     [SerializeField] private LayerMask _hitLayerMask = ~0;
 
     private Camera _mainCamera;
+    private Animator _animator;
     private MeleeItemData _currentMeleeData;
 
     // 공격 타이밍 및 쿨타임 상태
@@ -56,9 +57,52 @@ public class PlayerMeleeCombat : NetworkBehaviour
     private void Awake()
     {
         if (_playerController == null) _playerController = GetComponent<PlayerController>();
-        if (_playerInventory == null) _playerInventory = GetComponent<PlayerInventory>();
+        EnsureInventoryReference();
         if (_playerItemHolder == null) _playerItemHolder = GetComponent<PlayerItemHolder>();
         if (_playerInteraction == null) _playerInteraction = GetComponent<PlayerInteraction>();
+        _animator = GetComponent<Animator>();
+
+        var pc = GetComponent<PlayerCharacter>();
+        if (pc != null)
+        {
+            pc.OnInventoryBound += HandleInventoryBound;
+        }
+    }
+
+    private void EnsureInventoryReference()
+    {
+        if (_playerInventory == null)
+        {
+            _playerInventory = GetComponent<PlayerInventory>();
+            if (_playerInventory == null)
+            {
+                var pc = GetComponent<PlayerCharacter>();
+                if (pc != null && pc.Inventory != null)
+                {
+                    _playerInventory = pc.Inventory;
+                }
+                else if (IsOwner && PlayerInventory.LocalInstance != null)
+                {
+                    _playerInventory = PlayerInventory.LocalInstance;
+                }
+            }
+        }
+    }
+
+    private void HandleInventoryBound(PlayerInventory inventory)
+    {
+        if (_playerInventory != null)
+        {
+            _playerInventory.OnSelectedToolbarSlotChanged -= HandleToolbarSlotChanged;
+            _playerInventory.OnInventoryChanged -= HandleInventoryChanged;
+        }
+        _playerInventory = inventory;
+        if (_playerInventory != null && (!IsSpawned || IsOwner))
+        {
+            _playerInventory.OnSelectedToolbarSlotChanged += HandleToolbarSlotChanged;
+            _playerInventory.OnInventoryChanged += HandleInventoryChanged;
+            CheckCurrentHeldMelee();
+        }
     }
 
     private void Start()
@@ -112,7 +156,7 @@ public class PlayerMeleeCombat : NetworkBehaviour
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         if (_playerInventory != null)
         {
@@ -124,6 +168,8 @@ public class PlayerMeleeCombat : NetworkBehaviour
         {
             LocalInstance = null;
         }
+
+        base.OnDestroy();
     }
 
     private void Update()
@@ -189,6 +235,11 @@ public class PlayerMeleeCombat : NetworkBehaviour
         _isAttacking = false;
         _hitEvaluated = false;
         _attackTimer = 0f;
+
+        if (_animator != null)
+        {
+            _animator.SetInteger("WeaponType", meleeData != null ? 3 : 0);
+        }
     }
 
     #endregion
@@ -246,6 +297,11 @@ public class PlayerMeleeCombat : NetworkBehaviour
         _hitEvaluated = false;
         _attackTimer = 0f;
         _cooldownTimer = _currentMeleeData.AttackInterval;
+
+        if (_animator != null)
+        {
+            _animator.SetTrigger("Attack");
+        }
 
         // 달리기 취소 및 이동 속도 감속 페널티 부여
         if (_playerController != null)
