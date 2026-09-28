@@ -35,6 +35,7 @@ public class PickableItem : NetworkBehaviour, IInteractable
     private const float SETTLE_SPEED_SQR = 0.005f;
 
     public bool IsSettled => _isSettled;
+    private Renderer[] _highlightRenderers;
 
     // 하위 호환성 빈 메서드 및 프로퍼티 (필요시 호출 방어)
     public bool IsHeld => false;
@@ -58,6 +59,7 @@ public class PickableItem : NetworkBehaviour, IInteractable
 
         _rigidbody = GetComponent<Rigidbody>();
         _colliders = GetComponentsInChildren<Collider>();
+        _highlightRenderers = GetComponentsInChildren<Renderer>(true);
 
         if (_colliders.Length > 0)
         {
@@ -87,6 +89,15 @@ public class PickableItem : NetworkBehaviour, IInteractable
     }
 
     #region IInteractable Implementation
+
+    public Renderer[] GetHighlightRenderers()
+    {
+        if (_highlightRenderers == null || _highlightRenderers.Length == 0)
+        {
+            _highlightRenderers = GetComponentsInChildren<Renderer>(true);
+        }
+        return _highlightRenderers;
+    }
 
     public bool CanInteract(PlayerInteraction interactor)
     {

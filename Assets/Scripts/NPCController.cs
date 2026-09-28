@@ -37,11 +37,13 @@ public class NPCController : NonPlayerCharacter, IInteractable
     private float _wanderTimer;
     private Vector3 _initialPosition;
     private int _dialogIndex;
+    private Renderer[] _highlightRenderers;
 
     protected override void Awake()
     {
         base.Awake();
         _navMeshAgent = GetComponent<NavMeshAgent>();
+        _highlightRenderers = GetComponentsInChildren<Renderer>(true);
     }
 
     public override void OnNetworkSpawn()
@@ -127,6 +129,15 @@ public class NPCController : NonPlayerCharacter, IInteractable
     }
 
     #region IInteractable Implementation
+
+    public Renderer[] GetHighlightRenderers()
+    {
+        if (_highlightRenderers == null || _highlightRenderers.Length == 0)
+        {
+            _highlightRenderers = GetComponentsInChildren<Renderer>(true);
+        }
+        return _highlightRenderers;
+    }
 
     public string GetInteractionPrompt()
     {

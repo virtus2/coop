@@ -504,9 +504,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1588118982481339330, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3580515817915809303, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
       propertyPath: m_Name
       value: Player_HeldRig
+      objectReference: {fileID: 0}
+    - target: {fileID: 3580515817915809303, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5875989840564330230, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5875989840564330230, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
+      propertyPath: m_CastShadows
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7607372532869884174, guid: f45f1481680cf294caca2c4bfe4034e1, type: 3}
       propertyPath: m_IsActive
@@ -594,7 +610,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f301257f1337b674eae3453d824a7955, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemHoldOffsetTweaker
-  _targetItemData: {fileID: 11400000, guid: 3d6cf9959a25ab04c8ddb84b23bb407e, type: 2}
+  _targetItemData: {fileID: 11400000, guid: 1e0389255ddd0744b98380862bd560e1, type: 2}
   _holdPoint: {fileID: 1747657626}
   _previewCamera: {fileID: 1426940700}
   _previewInstance: {fileID: 0}

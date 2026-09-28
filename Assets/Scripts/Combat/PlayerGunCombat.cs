@@ -628,6 +628,8 @@ public class PlayerGunCombat : NetworkBehaviour
 
         if (_animator != null)
         {
+            float fireSpeed = Mathf.Clamp(0.25f / Mathf.Max(0.05f, _currentGunData.FireInterval), 0.5f, 4.0f);
+            _animator.SetFloat("FireSpeed", fireSpeed);
             _animator.SetTrigger("Fire");
         }
 
@@ -664,6 +666,8 @@ public class PlayerGunCombat : NetworkBehaviour
 
         if (_animator != null)
         {
+            float fireSpeed = Mathf.Clamp(0.25f / Mathf.Max(0.05f, _currentGunData.FireInterval), 0.5f, 4.0f);
+            _animator.SetFloat("FireSpeed", fireSpeed);
             _animator.SetTrigger("Fire");
         }
 
@@ -1152,6 +1156,13 @@ public class PlayerGunCombat : NetworkBehaviour
         _isReloading = true;
         _reloadTimer = 0f;
 
+        if (_animator != null)
+        {
+            float reloadSpeed = Mathf.Clamp(2.0f / Mathf.Max(0.5f, _currentGunData.ReloadDuration), 0.5f, 3.0f);
+            _animator.SetFloat("ReloadSpeed", reloadSpeed);
+            _animator.SetTrigger("Reload");
+        }
+
         if (_currentGunData.ReloadSound != null)
         {
             AudioSource.PlayClipAtPoint(_currentGunData.ReloadSound, _mainCamera.transform.position);
@@ -1207,6 +1218,10 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             _isReloading = false;
             _reloadTimer = 0f;
+            if (_animator != null)
+            {
+                _animator.ResetTrigger("Reload");
+            }
             UpdateCombatActionStateSync();
             OnReloadCancelled?.Invoke();
             Debug.Log("[PlayerGunCombat] 재장전 취소됨 (무기 교체 등).");
@@ -1221,6 +1236,14 @@ public class PlayerGunCombat : NetworkBehaviour
     {
         _shellReloadStage = ShellReloadStage.Starting;
         _shellReloadTimer = 0f;
+
+        if (_animator != null)
+        {
+            float totalShellTime = _currentGunData.ReloadStartDelay + _currentGunData.ReloadInsertInterval + _currentGunData.ReloadEndDelay;
+            float reloadSpeed = Mathf.Clamp(2.0f / Mathf.Max(0.5f, totalShellTime), 0.5f, 3.0f);
+            _animator.SetFloat("ReloadSpeed", reloadSpeed);
+            _animator.SetTrigger("Reload");
+        }
 
         // 시작음 재생
         AudioClip startClip = _currentGunData.ReloadStartSound != null ? _currentGunData.ReloadStartSound : _currentGunData.ReloadSound;
@@ -1315,6 +1338,10 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             _shellReloadStage = ShellReloadStage.None;
             _shellReloadTimer = 0f;
+            if (_animator != null)
+            {
+                _animator.ResetTrigger("Reload");
+            }
             UpdateCombatActionStateSync();
             OnReloadCancelled?.Invoke();
             Debug.Log("[PlayerGunCombat] 쉘 바이 쉘 장전 취소됨 (현재 장전된 탄약 보존).");

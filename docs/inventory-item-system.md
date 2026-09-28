@@ -82,7 +82,8 @@ flowchart TD
 ### 1) 데이터 계층 (Data Hub)
 - **[`ItemData.cs`](file:///c:/unity-projects/coop/Assets/Scripts/Inventory/ItemData.cs)**:
   - 아이템의 기본 정보(이름, 아이콘, 설명, 최대 스택 수)를 정의하는 ScriptableObject.
-  - 손에 들었을 때 사용할 뷰모델 정보(`HeldMesh`, `HeldMaterial`, `HeldLocalPosition/Rotation/Scale`) 내장.
+  - 손에 들었을 때 사용할 뷰모델 정보(`HeldMesh`, `HeldMaterial`, `HeldLocalPosition/Rotation/Scale`, 3P 소켓 오프셋) 내장.
+  - 양손 무기 왼손 Two-Bone IK 파지 설정(`UseLeftHandIK`, `LeftHandIKLocalPosition/Rotation`) 내장.
   - 아이템 액션 분류(`ItemActionType`: `None`, `Gun`, `Medkit`, `ChargedWeapon`, `Placeable`) 및 월드 프리팹(`WorldPrefab`) 참조 연결.
 - **[`ItemDatabase.cs`](file:///c:/unity-projects/coop/Assets/Scripts/Inventory/ItemDatabase.cs)**:
   - `Assets/Resources/ItemData/` 경로의 모든 에셋을 자동 탐색하여 딕셔너리에 캐싱.
@@ -98,13 +99,17 @@ flowchart TD
   - 슬롯 간 스왑, 아이템 나누기, 빈 핫바 슬롯 자동 탐색(`FindEmptyToolbarSlot`).
   - `ToolbarSelectedIndex`: 현재 선택된 핫바 슬롯 인덱스(0~8) 관리 및 변경 이벤트 발행.
 - **[`PlayerItemHolder.cs`](file:///c:/unity-projects/coop/Assets/Scripts/Inventory/PlayerItemHolder.cs)**:
-  - 플레이어의 손 소켓(`HoldPoint`) 하위에 `HeldItemVisual` 단일 자식 오브젝트 관리.
-  - **로컬 뷰모델 갱신:**
-    - 핫바 슬롯 변경 시 메쉬와 머티리얼을 즉시 변경하고 오프셋 적용. 빈손일 땐 `SetActive(false)`.
-    - 1인칭 화면에서는 그림자 끄기(`ShadowCastingMode.Off`).
+  - **1인칭 뷰모델 & 3인칭 월드모델 이원화 (Dual-Visual Architecture):**
+    - **1인칭 뷰모델 (`HeldItemVisual_1P`):** `CameraTarget/HoldPoint` 하위에 부착. 로컬 플레이어 화면 전용으로 `HeldLocalPosition/Rotation/Scale` 오프셋을 사용하며, `HeldPositionEditScene`과 1:1로 일치. 그림자 투영 방지(`ShadowCastingMode.Off`).
+    - **3인칭 월드모델 (`HeldItemVisual_3P`):** 캐릭터 리그 오른손 소켓(`RightHand/HoldPoint3P`, Mixamo 회전 보정 `Euler(314, 211, 254)`) 하위에 부착. `HeldLocalPosition3P/Rotation3P/Scale3P` 오프셋 적용.
+      - 로컬 플레이어: `ShadowCastingMode.ShadowsOnly` (1인칭 시점 클리핑 방지 + 정확한 바디 그림자 투영 및 왼손 IK 기준점 제공).
+      - 원격 플레이어: `ShadowCastingMode.On` (타 플레이어에게 무기 외형 완벽 표시).
+  - **손 소켓 부착 및 뷰모델 갱신:**
+    - 핫바 슬롯 변경 시 단일 소켓 메쉬와 머티리얼을 즉시 변경(런타임 프리팹 Instantiate/Destroy 없음). 빈손일 땐 양쪽 비주얼 모두 `SetActive(false)`.
+    - 캐릭터 리그 오른손에 직접 결합되어 무기 애니메이션 및 `PlayerCharacterIK`(양손 총기 왼손 Two-Bone IK)와 완벽하게 정렬.
   - **원격 플레이어 동기화:**
     - `NetworkVariable<FixedString64Bytes> _networkHeldItemId`를 통해 서버에 현재 든 아이템 ID 동기화.
-    - 원격 클라이언트는 해당 플레이어의 손 소켓 메쉬/머티리얼을 교체하고 그림자 켜기(`ShadowCastingMode.On`).
+    - 원격 클라이언트 역시 동일한 손 소켓 메쉬/머티리얼 교체 방식으로 실시간 외형 반영.
   - **드롭 및 픽업 처리:**
     - 월드 아이템 획득 시 서버에 Despawn 요청 후 손에 든 상태(`_pendingHeldItemData`)로 유지.
     - 유저가 키보드 번호키(1~0) 입력 시 지정 툴바 슬롯(또는 다음 빈 슬롯)에 보관하며, 툴바 슬롯이 가득 찼다면 바닥으로 자동 드롭.

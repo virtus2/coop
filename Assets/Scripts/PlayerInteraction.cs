@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Coop.Rendering;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -113,12 +114,17 @@ public class PlayerInteraction : NetworkBehaviour
         if (IsOwner)
         {
             UnsubscribeInput();
+            ClearCurrentTarget();
             if (InteractionUI.Instance != null)
             {
-                InteractionUI.Instance.HidePrompt();
                 InteractionUI.Instance.HideHeldHint();
             }
         }
+    }
+
+    private void OnDisable()
+    {
+        ClearCurrentTarget();
     }
 
     public override void OnDestroy()
@@ -126,9 +132,9 @@ public class PlayerInteraction : NetworkBehaviour
         if (IsOwner || !IsSpawned)
         {
             UnsubscribeInput();
+            ClearCurrentTarget();
             if (InteractionUI.Instance != null)
             {
-                InteractionUI.Instance.HidePrompt();
                 InteractionUI.Instance.HideHeldHint();
             }
         }
@@ -280,8 +286,30 @@ public class PlayerInteraction : NetworkBehaviour
         }
     }
 
+    private bool IsUIBlocking()
+    {
+        if (InventoryUIController.Instance != null && InventoryUIController.Instance.IsOpen)
+        {
+            return true;
+        }
+
+        if (InGameMenuController.Instance != null && InGameMenuController.Instance.IsMenuOpen)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     private void UpdateAimRaycast()
     {
+        // UI가 열려있는 경우 월드 오브젝트 상호작용 및 외곽선 강조 즉시 중단
+        if (IsUIBlocking())
+        {
+            ClearCurrentTarget();
+            return;
+        }
+
         Ray ray = _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         int hitCount = Physics.RaycastNonAlloc(ray, _raycastHits, _interactionRange, _interactionLayerMask, QueryTriggerInteraction.Ignore);
@@ -305,7 +333,8 @@ public class PlayerInteraction : NetworkBehaviour
                 interactable = hit.collider.GetComponent<IInteractable>();
             }
 
-            if (interactable != null && interactable.CanInteract(this))
+            // 상호작용 가능 여부와 무관하게 사거리 내 인터랙터블이면 탐색 대상에 포함 (불가 시 빨간 외곽선 표시)
+            if (interactable != null)
             {
                 if (hit.distance < closestDistance)
                 {
@@ -328,18 +357,27 @@ public class PlayerInteraction : NetworkBehaviour
     private void SetCurrentTarget(IInteractable interactable)
     {
         _currentTarget = interactable;
+
+        bool canInteract = _currentTarget.CanInteract(this);
+        Color outlineColor = canInteract ? Color.white : new Color(1.0f, 0.2f, 0.2f, 1.0f);
+        Renderer[] renderers = _currentTarget.GetHighlightRenderers();
+
+        OutlineManager.SetHighlight(renderers, outlineColor);
+
         if (InteractionUI.Instance != null)
         {
             string prompt = _currentTarget.GetInteractionPrompt();
-            InteractionUI.Instance.ShowPrompt("E", string.IsNullOrEmpty(prompt) ? "상호작용" : prompt);
+            Color textColor = canInteract ? Color.white : new Color(1.0f, 0.35f, 0.35f, 1.0f);
+            InteractionUI.Instance.ShowPrompt("E", string.IsNullOrEmpty(prompt) ? "상호작용" : prompt, textColor);
         }
     }
 
     private void ClearCurrentTarget()
     {
-        if (_currentTarget != null)
+        if (_currentTarget != null || OutlineManager.HasTarget)
         {
             _currentTarget = null;
+            OutlineManager.ClearHighlight();
             if (InteractionUI.Instance != null)
             {
                 InteractionUI.Instance.HidePrompt();

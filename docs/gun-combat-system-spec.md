@@ -13,6 +13,8 @@
 - **주요 구성 요소:**
   - `GunItemData`: 무기 스탯(데미지, 사격 주기, 탄창, 반동, 발사 모드, 샷건 산탄/감쇄, 쉘 바이 쉘 장전 설정 등)을 정의하는 ScriptableObject.
   - `PlayerGunCombat`: 사격 입력, 차징, 연사, 쉘 바이 쉘 장전, 반동 제어 및 ServerRpc 통신.
+  - `PlayerItemHolder`: 캐릭터 Rig의 오른손 소켓(`RightHand/HoldPoint3P`)에 총기를 일원화하여 결합/교체 및 네트워크 동기화.
+  - `PlayerCharacterIK`: 상체 Aim Offset LookAt 및 양손 총기 왼손 핸드가드 Two-Bone IK 제어.
   - `InventorySlot` 런타임 데이터 확장: 무기 인스턴스별 잔탄 보존.
   - `IDamageable`: 몬스터 및 파괴 가능 오브젝트 피격 인터페이스.
   - `Hitbox` / `HeadHitbox`: 부위별(헤드샷 1.5배) 피격 판정 컴포넌트.
@@ -140,6 +142,35 @@
 3. **달리기 중 사격(좌클릭):** 달리기 즉시 해제 및 `_sprintToFireDelay`(약 0.18초) 후 첫 발 격발.
 4. **달리기 중 재장전(`R`):** 달리기 즉시 해제 및 재장전 프로세스 시작.
 5. **사격 중 이동 속도 페널티:** 사격 중에는 걷기 속도가 약 25% 감소 (기본 속도의 75%로 이동).
+
+---
+
+### 8) 무기 파지 및 캐릭터 릭 동기화 (Weapon Grip & Two-Bone IK)
+1. **1인칭 뷰모델 & 3인칭 월드모델 이원화 (Dual-Visual Socket System):**
+   - **1인칭 뷰모델 (`HeldItemVisual_1P`):** `CameraTarget/HoldPoint` 소켓에 부착되어 화면상의 1인칭 조준 시야를 담당합니다. `HeldPositionEditScene`에서 편집한 위치/각도와 1:1로 일치하며, 1인칭 화면 클리핑 및 불필요한 그림자 간섭을 없애기 위해 `ShadowCastingMode.Off`로 렌더링됩니다.
+   - **3인칭 월드모델 (`HeldItemVisual_3P`):** 캐릭터 Rig의 오른손 소켓(`RightHand/HoldPoint3P`)에 부착됩니다. Mixamo 휴머노이드 손 본의 로컬 좌표계 오차를 수학적으로 상쇄(`Euler(314, 211, 254)`)하여 총구 전방이 캐릭터 정면 조준선과 완벽하게 정렬됩니다.
+     - **로컬 플레이어:** `ShadowCastingMode.ShadowsOnly` 모드로 동작하여 1인칭 시야를 가리지 않으면서 바닥/몸체에 정확한 전신 총기 그림자를 투영하고, 왼손 Two-Bone IK의 월드 기준점을 제공합니다.
+     - **원격 플레이어:** `ShadowCastingMode.On` 모드로 타 유저에게 총기 모델과 격발 모션을 완벽히 렌더링합니다.
+2. **양손 무기 왼손 Two-Bone IK 스냅 (`PlayerCharacterIK`):**
+   - `GunItemData.UseLeftHandIK == true`인 양손 총기(소총, 샷건 등)는 3인칭 오른손에 쥐어진 총기(`ThirdPersonHeldInstance`)의 핸드가드 로컬 좌표(`LeftHandIKLocalPosition`)로 왼손 본(`AvatarIKGoal.LeftHand`)을 Two-Bone IK로 스냅합니다.
+   - 3인칭 총기 위치를 기준으로 IK가 계산되므로 1인칭 카메라 위치와 무관하게 캐릭터 모델의 양손이 총기 그립과 핸드가드에 완벽하게 밀착됩니다.
+   - 무기 스왑 시 `_ikTransitionSpeed`를 통해 IK 가중치가 부드럽게 전환(Blend)됩니다.
+   - 한손 무기(권총)는 `UseLeftHandIK == false`로 설정되어 IK 스냅 없이 자연스러운 단일 손 애니메이션 자세를 유지합니다.
+3. **왼손 Two-Bone IK 파지 위치 설정 가이드 (How to Configure Left Hand IK):**
+   - **설정 항목 (`ItemData` / `GunItemData` ScriptableObject):**
+     - `Use Left Hand IK (bool)`: 양손 무기일 때 활성화 (소총/샷건: true, 권총: false).
+     - `Left Hand IK Local Position (Vector3)`: **총기 모델 원점 기준** 왼손이 닿아야 하는 핸드가드 로컬 좌표계.
+       - `X`: 좌/우 오프셋 (+오른쪽, -왼쪽)
+       - `Y`: 상/하 오프셋 (+위, -아래)
+       - `Z`: 전/후 오프셋 (+총구/총열 앞쪽, -개머리판/손잡이 뒤쪽)
+     - `Left Hand IK Local Rotation (Vector3)`: 총기 기준 왼손 손목 회전 각도(Euler).
+   - **설정 방법 1 - 에디터 비주얼 툴 조작 (추천):**
+     - 메뉴 `Tools > Item Hold Offset > Open Held Position Edit Scene` 실행.
+     - `ItemHoldOffsetTweaker`에서 `Target Item Data`에 총기 지정 후 `🧍 3인칭 오른손 (3P HoldPoint3P)` 툴바 선택.
+     - `[🎯 Select Left Hand IK Target (W/E)]` 버튼 클릭 시 씬 뷰에서 하늘색 원형 기즈모(`✋ Left Hand IK Grip`)가 선택됨.
+     - 유니티 이동 기즈모(W)로 원하는 앞총열/핸드가드 위치로 드래그 후 `[💾 Save to ItemData]` 클릭으로 영구 저장.
+   - **설정 방법 2 - 인스펙터 수치 직접 입력:**
+     - `Assets/Resources/ItemData/Gun_*.asset` 에셋을 선택하고 `Two-Bone IK Settings` 섹션에서 좌표 직접 수정.
 
 ---
 

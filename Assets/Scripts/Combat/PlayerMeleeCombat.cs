@@ -32,6 +32,7 @@ public class PlayerMeleeCombat : NetworkBehaviour
     private float _attackTimer;
     private float _cooldownTimer;
     private bool _hitEvaluated;
+    private int _attackSide = 0; // 0: 우측 베기, 1: 좌측 베기 (옵션 A 좌우 교차)
 
     // 뷰모델 스윙 연출용 코루틴
     private Coroutine _swingVisualCoroutine;
@@ -300,7 +301,15 @@ public class PlayerMeleeCombat : NetworkBehaviour
 
         if (_animator != null)
         {
+            float totalDuration = _currentMeleeData.WindupDuration + _currentMeleeData.RecoveryDuration;
+            float baseAnimDuration = 0.5f;
+            float attackSpeed = Mathf.Clamp(baseAnimDuration / Mathf.Max(0.1f, totalDuration), 0.5f, 3.0f);
+
+            _animator.SetInteger("AttackSide", _attackSide);
+            _animator.SetFloat("AttackSpeed", attackSpeed);
             _animator.SetTrigger("Attack");
+
+            _attackSide = 1 - _attackSide;
         }
 
         // 달리기 취소 및 이동 속도 감속 페널티 부여

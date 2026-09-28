@@ -546,7 +546,7 @@ CharacterController:
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &2362549427457962819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -674,6 +674,30 @@ MonoBehaviour:
       NameHash: 1080829965
       Synchronize: 1
       ParameterType: 9
+    - name: MoveX
+      NameHash: 675470966
+      Synchronize: 1
+      ParameterType: 1
+    - name: MoveY
+      NameHash: 1598418656
+      Synchronize: 1
+      ParameterType: 1
+    - name: FireSpeed
+      NameHash: -1355895625
+      Synchronize: 1
+      ParameterType: 1
+    - name: ReloadSpeed
+      NameHash: 2036790888
+      Synchronize: 1
+      ParameterType: 1
+    - name: AttackSide
+      NameHash: -132964811
+      Synchronize: 1
+      ParameterType: 3
+    - name: AttackSpeed
+      NameHash: -498733101
+      Synchronize: 1
+      ParameterType: 1
   AnimatorParametersExpanded: 0
 --- !u!114 &2187705669790487200
 MonoBehaviour:
@@ -689,6 +713,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerItemHolder
   ShowTopMostFoldoutHeaderGroup: 1
   _thirdPersonHoldPoint: {fileID: 1084063008884625216}
+  _firstPersonHoldPoint: {fileID: 4096513234399327334}
 --- !u!114 &899389255943947349
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1093,8 +1118,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5920297153633931757}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.08, y: 0.05, z: 0.05}
+  m_LocalRotation: {x: -0.64557034, y: 0.6172182, z: 0.42305538, w: 0.1526596}
+  m_LocalPosition: {x: 0.08, y: 0.03, z: 0.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

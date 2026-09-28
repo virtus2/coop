@@ -18,11 +18,26 @@ public class ItemHoldOffsetTweakerEditor : Editor
 
         EditorGUILayout.Space(6);
         EditorGUILayout.HelpBox(
-            "1. 아래 Target Item Data에 편집할 총기/아이템(GunItemData 등)을 할당합니다.\n" +
-            "2. [Select Preview Object] 버튼을 누르거나 씬 뷰에서 총기를 선택합니다.\n" +
-            "3. 씬 뷰에서 유니티 기본 기즈모(W, E, R)로 위치, 각도, 크기를 손에 맞게 맞춥니다.\n" +
-            "4. [💾 Save to ItemData] 버튼을 눌러 ScriptableObject에 영구 저장합니다.",
+            "1. 상단 툴바에서 [📷 1인칭 뷰모델] 또는 [🧍 3인칭 오른손] 모드를 선택합니다.\n" +
+            "2. Target Item Data에 편집할 총기 에셋(Gun_AssaultRifle 등)을 할당합니다.\n" +
+            "3. [🎯 Select Preview (W/E/R)] 버튼을 눌러 오른손 총기 부착 위치/각도를 손에 맞춥니다.\n" +
+            "4. 양손 무기인 경우, 아래 [🎯 Select Left Hand IK Target (W/E)] 버튼을 눌러 왼손이 파지할 앞총열(핸드가드) 위치로 기즈모를 드래그합니다.\n" +
+            "5. [💾 Save to ItemData] 버튼을 누르면 총기 오프셋 및 왼손 IK 파지 위치가 ItemData에 영구 저장됩니다.",
             MessageType.Info);
+        EditorGUILayout.Space(6);
+
+        int currentModeIndex = _tweaker.Mode == ItemHoldOffsetTweaker.SocketEditMode.FirstPerson1P ? 0 : 1;
+        EditorGUI.BeginChangeCheck();
+        int newModeIndex = GUILayout.Toolbar(currentModeIndex, new string[] { "📷 1인칭 뷰모델 (1P Camera)", "🧍 3인칭 오른손 (3P HoldPoint3P)" }, GUILayout.Height(32));
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(_tweaker, "Change Socket Edit Mode");
+            _tweaker.CleanupPreviewInstance();
+            _tweaker.Mode = (ItemHoldOffsetTweaker.SocketEditMode)newModeIndex;
+            _tweaker.HoldPoint = _tweaker.FindHoldPointForMode(_tweaker.Mode);
+            _tweaker.RefreshPreview(true);
+            EditorUtility.SetDirty(_tweaker);
+        }
         EditorGUILayout.Space(6);
 
         // 기본 프로퍼티 필드들
@@ -55,12 +70,51 @@ public class ItemHoldOffsetTweakerEditor : Editor
                 Transform pt = _tweaker.PreviewInstance.transform;
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.LabelField("Live Socket Local Transform", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("Live Socket Local Transform (오른손 소켓 부착 오프셋)", EditorStyles.miniBoldLabel);
                 EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.Vector3Field("Local Position", pt.localPosition);
                 EditorGUILayout.Vector3Field("Local Rotation", pt.localEulerAngles);
                 EditorGUILayout.Vector3Field("Local Scale", pt.localScale);
                 EditorGUI.EndDisabledGroup();
+                EditorGUILayout.EndVertical();
+
+                // Two-Bone IK 섹션
+                SerializedObject targetDataSo = new SerializedObject(_tweaker.TargetItemData);
+                targetDataSo.Update();
+                SerializedProperty useIKProp = targetDataSo.FindProperty("_useLeftHandIK");
+
+                EditorGUILayout.Space(6);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(useIKProp, new GUIContent("✋ Use Left Hand IK (양손 무기)", "총기 파지 시 왼손 Two-Bone IK 활성화 여부"));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    targetDataSo.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(_tweaker.TargetItemData);
+                    _tweaker.RefreshPreview(false);
+                }
+
+                if (_tweaker.TargetItemData.UseLeftHandIK)
+                {
+                    if (_tweaker.IKTargetInstance != null)
+                    {
+                        Transform ikT = _tweaker.IKTargetInstance.transform;
+                        EditorGUI.BeginDisabledGroup(true);
+                        EditorGUILayout.Vector3Field("IK Local Position", ikT.localPosition);
+                        EditorGUILayout.Vector3Field("IK Local Rotation", ikT.localEulerAngles);
+                        EditorGUI.EndDisabledGroup();
+
+                        EditorGUILayout.Space(4);
+                        if (GUILayout.Button("🎯 Select Left Hand IK Target (W/E)", GUILayout.Height(28)))
+                        {
+                            _tweaker.SelectIKTargetObject();
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.HelpBox("IK 타겟 프리뷰 오브젝트가 아직 생성되지 않았습니다.", MessageType.Info);
+                    }
+                }
                 EditorGUILayout.EndVertical();
 
                 EditorGUILayout.Space(6);

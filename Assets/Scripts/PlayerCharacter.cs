@@ -162,10 +162,10 @@ public class PlayerCharacter : NetworkBehaviour
         if (_characterController == null)
         {
             _characterController = gameObject.AddComponent<CharacterController>();
-            _characterController.center = new Vector3(0f, 1f, 0f);
-            _characterController.height = 2f;
-            _characterController.radius = 0.5f;
         }
+        _characterController.center = new Vector3(0f, 1f, 0f);
+        _characterController.height = 2f;
+        _characterController.radius = 0.5f;
 
         int playerLayer = LayerMask.NameToLayer("Player");
         if (playerLayer >= 0)
@@ -218,6 +218,10 @@ public class PlayerCharacter : NetworkBehaviour
         }
 
         _animator = GetComponent<Animator>();
+        if (_animator != null)
+        {
+            _animator.applyRootMotion = false;
+        }
         _characterIK = GetComponent<PlayerCharacterIK>();
 
         _currentSpeed = _moveSpeed;
@@ -323,6 +327,11 @@ public class PlayerCharacter : NetworkBehaviour
         {
             if (r != null)
             {
+                // 손에 든 무기 비주얼(HeldItemVisual_1P, HeldItemVisual_3P)은 PlayerItemHolder가 자체 관리하므로 제외
+                if (r.gameObject.name.StartsWith("HeldItemVisual"))
+                {
+                    continue;
+                }
                 r.shadowCastingMode = shadowMode;
             }
         }
@@ -631,6 +640,8 @@ public class PlayerCharacter : NetworkBehaviour
             _animator.SetFloat("MoveX", moveInput.x);
             _animator.SetFloat("MoveY", moveInput.y);
             _animator.SetBool("IsSprinting", _isSprinting);
+            _animator.SetBool("IsMoving", moveInput.sqrMagnitude > 0.01f);
+            _animator.SetFloat("Speed", moveInput.sqrMagnitude > 0.01f ? effectiveSpeed : 0f);
         }
     }
 
@@ -716,6 +727,8 @@ public class PlayerCharacter : NetworkBehaviour
                 _animator.SetFloat("MoveX", 0f);
                 _animator.SetFloat("MoveY", 0f);
                 _animator.SetBool("IsSprinting", false);
+                _animator.SetBool("IsMoving", false);
+                _animator.SetFloat("Speed", 0f);
             }
         }
     }

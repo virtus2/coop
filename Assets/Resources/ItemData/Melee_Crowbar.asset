@@ -19,20 +19,21 @@ MonoBehaviour:
     \uD45C\uC900 \uADFC\uC811 \uBB34\uAE30\uC785\uB2C8\uB2E4. \uB9C8\uC6B0\uC2A4
     \uC88C\uD074\uB9AD \uD640\uB4DC \uC2DC \uC5F0\uC18D \uACF5\uACA9\uC774 \uAC00\uB2A5\uD569\uB2C8\uB2E4."
   _maxStackSize: 1
-  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMesh: {fileID: 4300000, guid: 3ad410f41143c6543bbc01f6c19c9b64, type: 2}
   _heldMaterial: {fileID: 2100000, guid: 97e1cea5a52806549afc460134833e72, type: 2}
-  _heldLocalPosition: {x: 0, y: 0.234, z: 0}
+  _heldLocalPosition: {x: 0, y: 0, z: 0}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
-  _heldLocalScale: {x: 0.1, y: 0.7, z: 0.1}
+  _heldLocalScale: {x: 1, y: 1, z: 1}
   _heldLocalPosition3P: {x: 0, y: 0, z: 0}
   _heldLocalRotation3P: {x: 0, y: 0, z: 0}
   _heldLocalScale3P: {x: 1, y: 1, z: 1}
   _useLeftHandIK: 0
   _leftHandIKLocalPosition: {x: 0, y: 0, z: 0}
   _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
+  _animatorOverrideController: {fileID: 22100000, guid: 4c889db973f07ba428169723fe977548, type: 2}
   _actionType: 5
   _placeableBuildingPrefab: {fileID: 0}
-  _worldPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 7443172046965286640, guid: 8a4f368c2fc31e14a88920e491bc689b, type: 3}
   _holdPrefab: {fileID: 0}
   _baseDamage: 35
   _attackInterval: 0.6

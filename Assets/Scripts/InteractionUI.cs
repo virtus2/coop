@@ -63,6 +63,14 @@ public class InteractionUI : MonoBehaviour
     /// <param name="actionText">동작 설명 (예: "들기", "상호작용", "열기")</param>
     public void ShowPrompt(string keyName, string actionText)
     {
+        ShowPrompt(keyName, actionText, Color.white);
+    }
+
+    /// <summary>
+    /// 상호작용 안내 텍스트를 지정한 색상으로 표시합니다. (예: 불가 시 빨간색)
+    /// </summary>
+    public void ShowPrompt(string keyName, string actionText, Color textColor)
+    {
         if (_promptPanel == null)
         {
             return;
@@ -71,11 +79,13 @@ public class InteractionUI : MonoBehaviour
         if (_keyText != null)
         {
             _keyText.text = keyName;
+            _keyText.color = textColor;
         }
 
         if (_promptText != null)
         {
             _promptText.text = actionText;
+            _promptText.color = textColor;
         }
 
         if (!_promptPanel.activeSelf)

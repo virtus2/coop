@@ -26,7 +26,7 @@
 - [x] **NGO 및 기본 패키지 환경 구축**
   - [x] Netcode for GameObjects (NGO) 패키지 설치 및 세팅
   - [x] Steamworks.NET 패키지 설치 및 `steam_appid.txt` (480) 설정
-  - [x] Unity Multiplayer Play Mode 패키지 설치 (로컬 다중 클라이언트 테스트 환경)
+  - [x] ParrelSync 패키지 설치 (에디터 클론 기반 로컬 멀티플레이어 테스트 환경)
   - [x] Universal Render Pipeline (URP) 환경 세팅 및 프로젝트 컨벤션 수립
 - [x] **네트워크 트랜스포트 분기 처리**
   - [x] NGO용 SteamSockets 기반 트랜스포트 연동

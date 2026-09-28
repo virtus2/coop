@@ -30,6 +30,15 @@ public class MainMenuUIController : MonoBehaviour
         if (_lobbyIdInputField != null)
         {
             _lobbyIdInputField.contentType = InputField.ContentType.IntegerNumber;
+#if UNITY_EDITOR
+            if (NetworkBootstrap.IsParrelSyncClone())
+            {
+                if (_lobbyIdInputField.placeholder is Text ph)
+                {
+                    ph.text = "클론: 비워두고 참가 시 로컬 접속...";
+                }
+            }
+#endif
         }
     }
 

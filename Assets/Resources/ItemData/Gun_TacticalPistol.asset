@@ -14,21 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GunItemData
   _itemId: Gun_TacticalPistol
   _itemName: "\uC804\uC220 \uAD8C\uCD1D"
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 050aaaf8fee16ee4b8ca60d4876306c3, type: 3}
   _description: "\uB2E8\uBC1C \uD074\uB9AD\uC73C\uB85C \uC815\uBC00 \uC0AC\uACA9\uC774
     \uAC00\uB2A5\uD55C \uAC15\uB825\uD55C \uBCF4\uC870 \uAD8C\uCD1D\uC785\uB2C8\uB2E4."
   _maxStackSize: 1
-  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  _heldMaterial: {fileID: 2100000, guid: 94971fae821686345a87f5bbde45a95d, type: 2}
+  _heldMesh: {fileID: 4300000, guid: 2fae3e83b5be6f04bb68647f1ebcd4bb, type: 2}
+  _heldMaterial: {fileID: 2100000, guid: 64a631015fc75e14bb08091cd31f76e2, type: 2}
   _heldLocalPosition: {x: 0, y: 0, z: 0}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
-  _heldLocalScale: {x: 0.1, y: 0.1, z: 0.29}
+  _heldLocalScale: {x: 1, y: 1, z: 1}
   _heldLocalPosition3P: {x: 0, y: 0, z: 0}
   _heldLocalRotation3P: {x: 0, y: 0, z: 0}
   _heldLocalScale3P: {x: 1, y: 1, z: 1}
   _useLeftHandIK: 0
   _leftHandIKLocalPosition: {x: 0, y: 0, z: 0}
   _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
+  _animatorOverrideController: {fileID: 22100000, guid: 6afe5f7e7a1f6de48ac1b16eba6eb6be, type: 2}
   _actionType: 1
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 7605198953023051987, guid: 8352efaeb04824544b71ebf90e651768, type: 3}

@@ -25,6 +25,8 @@ public class InGameMenuController : MonoBehaviour
     private bool _isMenuOpen = false;
     private bool _isExiting = false;
 
+    public bool IsMenuOpen => _isMenuOpen;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatic()
     {

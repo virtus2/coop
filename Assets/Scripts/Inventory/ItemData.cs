@@ -58,6 +58,10 @@ public class ItemData : ScriptableObject
     [Tooltip("무기 기준 왼손 핸드가드 그립 로컬 회전 오프셋 (오일러 각)")]
     [SerializeField] private Vector3 _leftHandIKLocalRotation = Vector3.zero;
 
+    [Header("Animation Settings")]
+    [Tooltip("손에 장착 시 3인칭 캐릭터 모델에 적용할 무기 전용 애니메이터 오버라이드 컨트롤러")]
+    [SerializeField] private AnimatorOverrideController _animatorOverrideController;
+
     [Header("Action Settings")]
     [Tooltip("손에 들었을 때 좌클릭/홀드로 실행할 액션 유형")]
     [SerializeField] private ItemActionType _actionType = ItemActionType.None;
@@ -82,13 +86,20 @@ public class ItemData : ScriptableObject
     public Vector3 HeldLocalRotation => _heldLocalRotation;
     public Vector3 HeldLocalScale => _heldLocalScale == Vector3.zero ? Vector3.one : _heldLocalScale;
 
-    public Vector3 HeldLocalPosition3P => _heldLocalPosition3P != Vector3.zero ? _heldLocalPosition3P : _heldLocalPosition;
-    public Vector3 HeldLocalRotation3P => _heldLocalRotation3P != Vector3.zero ? _heldLocalRotation3P : _heldLocalRotation;
-    public Vector3 HeldLocalScale3P => _heldLocalScale3P == Vector3.zero ? HeldLocalScale : _heldLocalScale3P;
+    public Vector3 HeldLocalPosition3P => _heldLocalPosition3P;
+    public Vector3 HeldLocalRotation3P => _heldLocalRotation3P;
+    public Vector3 HeldLocalScale3P => _heldLocalScale3P == Vector3.zero ? Vector3.one : _heldLocalScale3P;
 
     public bool UseLeftHandIK => _useLeftHandIK;
     public Vector3 LeftHandIKLocalPosition => _leftHandIKLocalPosition;
     public Vector3 LeftHandIKLocalRotation => _leftHandIKLocalRotation;
+
+    public AnimatorOverrideController AnimatorOverride => _animatorOverrideController;
+
+    public void SetAnimatorOverride(AnimatorOverrideController overrideController)
+    {
+        _animatorOverrideController = overrideController;
+    }
 
     public ItemActionType ActionType => _actionType;
     public PlaceableObject PlaceableBuildingPrefab => _placeableBuildingPrefab;

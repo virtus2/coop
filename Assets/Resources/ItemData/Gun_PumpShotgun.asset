@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GunItemData
   _itemId: Gun_PumpShotgun
   _itemName: "\uD38C\uD504\uC561\uC158 \uC0F7\uAC74"
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: e9ef3e6425dc20c478538157ec992cb4, type: 3}
   _description: "\uADFC\uAC70\uB9AC\uC5D0\uC11C 8\uBC1C\uC758 \uC0B0\uD0C4 \uD3A0\uB9BF\uC744
     \uBC29\uCD9C\uD558\uB294 \uAC15\uB825\uD55C \uC0B0\uD0C4\uCD1D\uC785\uB2C8\uB2E4.
     1\uBC1C\uC529 \uD29C\uBE0C\uC5D0 \uC7A5\uC804\uD558\uBA70 \uC7A5\uC804 \uC911
     \uC989\uC2DC \uACA9\uBC1C\uC774 \uAC00\uB2A5\uD569\uB2C8\uB2E4."
   _maxStackSize: 1
-  _heldMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _heldMesh: {fileID: 4300000, guid: 4a74a1560f391574eae5ef6927ef9213, type: 2}
   _heldMaterial: {fileID: 2100000, guid: 162a67c687fc2c14baabd4837f55317d, type: 2}
   _heldLocalPosition: {x: 0, y: 0, z: 0}
   _heldLocalRotation: {x: 0, y: 0, z: 0}
@@ -29,11 +29,12 @@ MonoBehaviour:
   _heldLocalRotation3P: {x: 0, y: 0, z: 0}
   _heldLocalScale3P: {x: 1, y: 1, z: 1}
   _useLeftHandIK: 1
-  _leftHandIKLocalPosition: {x: -0.06, y: -0.04, z: 0.3}
+  _leftHandIKLocalPosition: {x: 0, y: 0.02, z: 0.25}
   _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
+  _animatorOverrideController: {fileID: 22100000, guid: 3b3292713d212164b8ec767f81f10832, type: 2}
   _actionType: 1
   _placeableBuildingPrefab: {fileID: 0}
-  _worldPrefab: {fileID: 0}
+  _worldPrefab: {fileID: 995891173655068131, guid: eeb418d36cd1ae643870459b26ce5005, type: 3}
   _holdPrefab: {fileID: 0}
   _baseDamage: 80
   _fireInterval: 0.8

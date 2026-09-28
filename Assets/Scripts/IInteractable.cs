@@ -25,4 +25,11 @@ public interface IInteractable
     /// </summary>
     /// <returns>상호작용 액션 텍스트</returns>
     string GetInteractionPrompt();
+
+    /// <summary>
+    /// 상호작용 조준 시 외곽선(아웃라인) 강조를 적용할 대상 렌더러 배열을 반환합니다.
+    /// 하위 자식 렌더러가 포함될 수 있습니다. 렌더러가 없는 경우 null 또는 빈 배열을 반환합니다.
+    /// </summary>
+    /// <returns>외곽선 강조 대상 렌더러 목록</returns>
+    Renderer[] GetHighlightRenderers();
 }

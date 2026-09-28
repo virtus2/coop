@@ -28,7 +28,38 @@ public class NetworkBootstrap : MonoBehaviour
         {
             Debug.LogWarning("Steamworks is not initialized. Make sure steam_appid.txt is present and Steam is running.");
         }
+
+#if UNITY_EDITOR
+        if (IsParrelSyncClone())
+        {
+            Debug.Log("[NetworkBootstrap] ParrelSync 클론 인스턴스에서 실행 중입니다. (로비 번호 비워두고 참가 시 로컬 호스트 자동 연결)");
+        }
+        else
+        {
+            Debug.Log("[NetworkBootstrap] 메인 에디터 인스턴스에서 실행 중입니다.");
+        }
+#endif
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// ParrelSync 클론 에디터 인스턴스인지 여부를 확인합니다.
+    /// (리플렉션을 사용하여 어셈블리 참조 오류 없이 안전하게 검사)
+    /// </summary>
+    public static bool IsParrelSyncClone()
+    {
+        var clonesManagerType = System.Type.GetType("ParrelSync.ClonesManager, ParrelSync");
+        if (clonesManagerType != null)
+        {
+            var isCloneMethod = clonesManagerType.GetMethod("IsClone", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (isCloneMethod != null)
+            {
+                return (bool)isCloneMethod.Invoke(null, null);
+            }
+        }
+        return false;
+    }
+#endif
 
     // 통신 방식(Transport)을 동적으로 변경하는 함수
     private void SetupTransport()

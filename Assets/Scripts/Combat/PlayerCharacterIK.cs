@@ -95,7 +95,7 @@ public class PlayerCharacterIK : MonoBehaviour
         }
 
         ItemData heldItem = _playerItemHolder.CurrentHeldItemData;
-        GameObject heldInstance = _playerItemHolder.CurrentHeldInstance;
+        GameObject heldInstance = _playerItemHolder.ThirdPersonHeldInstance ?? _playerItemHolder.CurrentHeldInstance;
 
         bool shouldUseIK = heldItem != null && heldItem.UseLeftHandIK && heldInstance != null && heldInstance.activeInHierarchy;
 
