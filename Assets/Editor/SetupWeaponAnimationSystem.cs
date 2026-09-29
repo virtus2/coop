@@ -395,6 +395,42 @@ public static class SetupWeaponAnimationSystem
         attackLToIdle.exitTime = 0.8f;
         attackLToIdle.duration = 0.1f;
 
+        // ==========================================
+        // 3. LeftHandIK Layer (Dedicated IK Pass Layer)
+        // ==========================================
+        if (controller.layers.Length < 3)
+        {
+            controller.AddLayer("LeftHandIK");
+        }
+
+        layers = controller.layers;
+        int leftHandLayerIndex = -1;
+        for (int i = 0; i < layers.Length; i++)
+        {
+            if (layers[i].name == "LeftHandIK")
+            {
+                leftHandLayerIndex = i;
+                break;
+            }
+        }
+        if (leftHandLayerIndex == -1) leftHandLayerIndex = 2;
+
+        AnimatorControllerLayer leftHandLayer = layers[leftHandLayerIndex];
+        leftHandLayer.name = "LeftHandIK";
+        leftHandLayer.avatarMask = null;
+        leftHandLayer.defaultWeight = 1.0f;
+        leftHandLayer.iKPass = true;
+        leftHandLayer.blendingMode = AnimatorLayerBlendingMode.Override;
+        layers[leftHandLayerIndex] = leftHandLayer;
+        controller.layers = layers;
+
+        AnimatorStateMachine leftHandStateMachine = leftHandLayer.stateMachine;
+        ClearStateMachine(leftHandStateMachine);
+        AnimatorState emptyIKState = leftHandStateMachine.AddState("Empty_IK", new Vector3(300, 50, 0));
+        emptyIKState.motion = null;
+        emptyIKState.writeDefaultValues = false;
+        leftHandStateMachine.defaultState = emptyIKState;
+
         EditorUtility.SetDirty(controller);
         return controller;
     }

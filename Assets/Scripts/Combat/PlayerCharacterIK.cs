@@ -31,13 +31,35 @@ public class PlayerCharacterIK : MonoBehaviour
     [Tooltip("무기 장착/해제 시 왼손 IK 가중치 전환 속도")]
     [SerializeField] private float _ikTransitionSpeed = 8f;
 
+    [Header("Animator Layer Settings")]
+    [Tooltip("상체 LookAt IK를 적용할 애니메이터 레이어 이름")]
+    [SerializeField] private string _upperBodyLayerName = "UpperBody";
+    [Tooltip("왼손 Two-Bone IK를 적용할 애니메이터 레이어 이름")]
+    [SerializeField] private string _leftHandLayerName = "LeftHandIK";
+
     private float _currentLeftHandWeight = 0f;
+    private int _upperBodyLayerIndex = -1;
+    private int _leftHandLayerIndex = -1;
 
     private void Awake()
     {
         if (_animator == null) _animator = GetComponent<Animator>();
         if (_playerController == null) _playerController = GetComponent<PlayerController>();
         if (_playerItemHolder == null) _playerItemHolder = GetComponent<PlayerItemHolder>();
+    }
+
+    private void Start()
+    {
+        CacheLayerIndices();
+    }
+
+    private void CacheLayerIndices()
+    {
+        if (_animator != null)
+        {
+            _upperBodyLayerIndex = _animator.GetLayerIndex(_upperBodyLayerName);
+            _leftHandLayerIndex = _animator.GetLayerIndex(_leftHandLayerName);
+        }
     }
 
     private void OnAnimatorIK(int layerIndex)
@@ -47,8 +69,32 @@ public class PlayerCharacterIK : MonoBehaviour
             return;
         }
 
-        HandleLookAtIK();
-        HandleLeftHandIK();
+        if (_upperBodyLayerIndex < 0 || _leftHandLayerIndex < 0)
+        {
+            CacheLayerIndices();
+        }
+
+        // 왼손 레이어가 정의되어 있는 경우: 레이어별 독립 실행
+        if (_leftHandLayerIndex >= 0)
+        {
+            if (layerIndex == _upperBodyLayerIndex)
+            {
+                HandleLookAtIK();
+            }
+            else if (layerIndex == _leftHandLayerIndex)
+            {
+                HandleLeftHandIK();
+            }
+        }
+        else
+        {
+            // 하위 호환성: 왼손 전용 레이어가 없는 단일 레이어 환경
+            if (layerIndex == _upperBodyLayerIndex || _upperBodyLayerIndex < 0)
+            {
+                HandleLookAtIK();
+                HandleLeftHandIK();
+            }
+        }
     }
 
     /// <summary>
@@ -70,9 +116,10 @@ public class PlayerCharacterIK : MonoBehaviour
         Vector3 headPos = headBone != null ? headBone.position : (transform.position + Vector3.up * 1.6f);
 
         // 캐릭터가 바라보는 전방 수평 벡터에서 상하 Pitch 회전 적용
+        // Unity의 음수 Pitch(상향) 회전에 맞추어 right(+X) 축을 기준으로 회전
         Vector3 forward = transform.forward;
         Vector3 right = transform.right;
-        Quaternion pitchRotation = Quaternion.AngleAxis(pitch, -right);
+        Quaternion pitchRotation = Quaternion.AngleAxis(pitch, right);
         Vector3 lookDirection = pitchRotation * forward;
         Vector3 targetLookPosition = headPos + lookDirection * 15f;
 
