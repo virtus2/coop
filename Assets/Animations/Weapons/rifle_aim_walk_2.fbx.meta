@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: 156ac4ae3579dfd48afc5ab6fa353798
 ModelImporter:
-  serializedVersion: 19300
+  serializedVersion: 24200
   internalIDToNameTable:
   - first:
       74: -203655887218126122
@@ -23,9 +23,8 @@ ModelImporter:
     bakeSimulation: 0
     resampleCurves: 1
     optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -52,7 +51,7 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
@@ -77,26 +76,38 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
     importLights: 1
+    nodeNameCollisionStrategy: 0
+    fileIdsGeneration: 1
     swapUVChannels: 0
     generateSecondaryUV: 0
     useFileUnits: 1
     keepQuads: 0
     weldVertices: 1
+    bakeAxisConversion: 0
     preserveHierarchy: 0
     skinWeightsMode: 0
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
     secondaryUVAreaDistortion: 15.000001
     secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 0
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
     secondaryUVPackMargin: 4
     useFileScale: 1
+    strictVertexDataChecks: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -593,8 +604,7 @@ ModelImporter:
     - name: LeftForeArm
       parentName: LeftArm
       position: {x: -0.27686998, y: 0, z: 0}
-      rotation: {x: -0.000000059604638, y: -0.0000000041418176, z: -1.03060373e-22,
-        w: 1}
+      rotation: {x: -0.000000059604638, y: -0.0000000041418176, z: -1.03060373e-22, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHand
       parentName: LeftForeArm
@@ -634,8 +644,7 @@ ModelImporter:
     - name: LeftHandMiddle3
       parentName: LeftHandMiddle2
       position: {x: -0.037132, y: 0, z: 0}
-      rotation: {x: 3.9375867e-16, y: -0.0000000015229547, z: -0.000000014823135,
-        w: 1}
+      rotation: {x: 3.9375867e-16, y: -0.0000000015229547, z: -0.000000014823135, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandMiddle4
       parentName: LeftHandMiddle3
@@ -650,8 +659,7 @@ ModelImporter:
     - name: LeftHandIndex2
       parentName: LeftHandIndex1
       position: {x: -0.055493, y: 0, z: 0}
-      rotation: {x: -0.00000010376192, y: 0.00000001482313, z: -0.0000000015229584,
-        w: 1}
+      rotation: {x: -0.00000010376192, y: 0.00000001482313, z: -0.0000000015229584, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandIndex3
       parentName: LeftHandIndex2
@@ -671,14 +679,12 @@ ModelImporter:
     - name: LeftHandRing2
       parentName: LeftHandRing1
       position: {x: -0.054452, y: 0, z: 0}
-      rotation: {x: -0.000000029646259, y: 0.000000025077389, z: -0.000000047515293,
-        w: 1}
+      rotation: {x: -0.000000029646259, y: 0.000000025077389, z: -0.000000047515293, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandRing3
       parentName: LeftHandRing2
       position: {x: -0.037132, y: 0, z: 0}
-      rotation: {x: 0.00000005929252, y: -0.0000000133001725, z: 0.000000016346082,
-        w: 1}
+      rotation: {x: 0.00000005929252, y: -0.0000000133001725, z: 0.000000016346082, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandRing4
       parentName: LeftHandRing3
@@ -693,14 +699,12 @@ ModelImporter:
     - name: LeftHandPinky2
       parentName: LeftHandPinky1
       position: {x: -0.036763, y: 0, z: 0}
-      rotation: {x: 0.00000002964626, y: -0.000000013300172, z: 0.00000001634609,
-        w: 1}
+      rotation: {x: 0.00000002964626, y: -0.000000013300172, z: 0.00000001634609, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandPinky3
       parentName: LeftHandPinky2
       position: {x: -0.028113, y: 0, z: 0}
-      rotation: {x: -0.00000005929252, y: -0.000000032692174, z: -0.000000026600343,
-        w: 1}
+      rotation: {x: -0.00000005929252, y: -0.000000032692174, z: -0.000000026600343, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: LeftHandPinky4
       parentName: LeftHandPinky3
@@ -720,8 +724,7 @@ ModelImporter:
     - name: RightForeArm
       parentName: RightArm
       position: {x: 0.27686998, y: 0, z: 0}
-      rotation: {x: -0.000000059604638, y: 0.0000000041418176, z: -3.0589697e-15,
-        w: 1}
+      rotation: {x: -0.000000059604638, y: 0.0000000041418176, z: -3.0589697e-15, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHand
       parentName: RightForeArm
@@ -756,14 +759,12 @@ ModelImporter:
     - name: RightHandIndex2
       parentName: RightHandIndex1
       position: {x: 0.053767998, y: 0, z: 0}
-      rotation: {x: -0.00000004455539, y: -0.000000014851795, z: 0.0000000012119272,
-        w: 1}
+      rotation: {x: -0.00000004455539, y: -0.000000014851795, z: 0.0000000012119272, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandIndex3
       parentName: RightHandIndex2
       position: {x: 0.033855, y: 0, z: 0}
-      rotation: {x: 0.000000029703594, y: 0.00000001727565, z: 0.000000028491673,
-        w: 1}
+      rotation: {x: 0.000000029703594, y: 0.00000001727565, z: 0.000000028491673, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandIndex4
       parentName: RightHandIndex3
@@ -778,14 +779,12 @@ ModelImporter:
     - name: RightHandMiddle2
       parentName: RightHandMiddle1
       position: {x: 0.056167997, y: 0, z: 0}
-      rotation: {x: -0.000000014851795, y: -0.000000014851799, z: 0.000000001211928,
-        w: 1}
+      rotation: {x: -0.000000014851795, y: -0.000000014851799, z: 0.000000001211928, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandMiddle3
       parentName: RightHandMiddle2
       position: {x: 0.037364, y: 0, z: 0}
-      rotation: {x: 0.000000059407178, y: 0.000000033339376, z: 0.000000042131536,
-        w: 1}
+      rotation: {x: 0.000000059407178, y: 0.000000033339376, z: 0.000000042131536, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandMiddle4
       parentName: RightHandMiddle3
@@ -800,14 +799,12 @@ ModelImporter:
     - name: RightHandRing2
       parentName: RightHandRing1
       position: {x: 0.054013, y: 0, z: 0}
-      rotation: {x: -0.000000029703587, y: -0.000000026067804, z: 0.00000004697923,
-        w: 1}
+      rotation: {x: -0.000000029703587, y: -0.000000026067804, z: 0.00000004697923, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandRing3
       parentName: RightHandRing2
       position: {x: 0.033915997, y: 0, z: 0}
-      rotation: {x: 0.000000059407174, y: 0.000000008792155, z: -0.0000000754709,
-        w: 1}
+      rotation: {x: 0.000000059407174, y: 0.000000008792155, z: -0.0000000754709, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandRing4
       parentName: RightHandRing3
@@ -822,8 +819,7 @@ ModelImporter:
     - name: RightHandPinky2
       parentName: RightHandPinky1
       position: {x: 0.036528, y: 0, z: 0}
-      rotation: {x: 0.000000029703589, y: 0.000000013639868, z: -0.000000016063723,
-        w: 1}
+      rotation: {x: 0.000000029703589, y: 0.000000013639868, z: -0.000000016063723, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: RightHandPinky3
       parentName: RightHandPinky2
@@ -897,12 +893,14 @@ ModelImporter:
     hasTranslationDoF: 0
     hasExtraRoot: 1
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: f5761de3eb913a44aa8c8a6dbcb3c8ac,
-    type: 3}
+  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: f5761de3eb913a44aa8c8a6dbcb3c8ac, type: 3}
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 3
   humanoidOversampling: 1
   avatarSetup: 2
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 0
+  importBlendShapeDeformPercent: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
   userData: 
   assetBundleName: 

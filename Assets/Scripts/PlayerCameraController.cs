@@ -10,8 +10,9 @@ public class PlayerCameraController : MonoBehaviour
 {
     public static PlayerCameraController Instance { get; private set; }
 
-    [Header("Cinemachine Camera")]
+    [Header("Cinemachine Camera & Brain")]
     [SerializeField] private CinemachineCamera _virtualCamera;
+    [SerializeField] private CinemachineBrain _cinemachineBrain;
 
     [Header("Spectate / Core Settings")]
     [Tooltip("캐릭터가 없을 때 비출 기지 방어 코어 또는 고정 관전 위치")]
@@ -37,6 +38,21 @@ public class PlayerCameraController : MonoBehaviour
 
         Instance = this;
         EnsureCamera();
+        EnsureBrain();
+    }
+
+    private void EnsureBrain()
+    {
+        if (_cinemachineBrain == null)
+        {
+            _cinemachineBrain = FindFirstObjectByType<CinemachineBrain>(FindObjectsInactive.Include);
+        }
+
+        if (_cinemachineBrain != null)
+        {
+            _cinemachineBrain.UpdateMethod = CinemachineBrain.UpdateMethods.LateUpdate;
+            _cinemachineBrain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.Cut, 0f);
+        }
     }
 
     private void EnsureCamera()
@@ -63,6 +79,7 @@ public class PlayerCameraController : MonoBehaviour
     public void SetCharacterTarget(Transform cameraTarget)
     {
         EnsureCamera();
+        EnsureBrain();
         _currentCharacterTarget = cameraTarget;
 
         if (_virtualCamera == null || cameraTarget == null)
@@ -73,13 +90,19 @@ public class PlayerCameraController : MonoBehaviour
         _virtualCamera.gameObject.SetActive(true);
         _virtualCamera.Priority.Value = 20;
 
-        // Cinemachine 3.x의 Target 설정
-        _virtualCamera.Target.TrackingTarget = cameraTarget;
-        _virtualCamera.Target.LookAtTarget = cameraTarget;
+        // 1인칭 카메라는 이미 CameraTarget의 자식 계층으로 부모 Transform을 1:1로 직접 따릅니다.
+        // TrackingTarget과 LookAtTarget을 지정하면 거리 0 벡터 연산으로 인해 시선이 꿀렁거리므로 null로 해제합니다.
+        _virtualCamera.Target.TrackingTarget = null;
+        _virtualCamera.Target.LookAtTarget = null;
 
-        // 카메라 위치를 즉시 동기화
-        _virtualCamera.transform.position = cameraTarget.position;
-        _virtualCamera.transform.rotation = cameraTarget.rotation;
+        if (!_virtualCamera.transform.IsChildOf(cameraTarget))
+        {
+            _virtualCamera.transform.SetParent(cameraTarget, false);
+        }
+
+        // 카메라 위치와 회전을 부모(CameraTarget)에 완전히 일치
+        _virtualCamera.transform.localPosition = Vector3.zero;
+        _virtualCamera.transform.localRotation = Quaternion.identity;
     }
 
     /// <summary>
