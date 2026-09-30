@@ -117,18 +117,27 @@
 ---
 
 ### 5) 화면 반동 및 에임 복구 (Recoil & Recovery)
-1. **화면 튕김 및 부드러운 자동 복구:**
-   - 격발 시 카메라 피치(상하)가 순간적으로 위로 튕김 (`RecoilPitch`).
-   - 미세 좌우 랜덤 흔들림 (`RecoilYaw`).
-   - 발사 후 마우스 조작이 멈추면 원래 조준점 높이로 부드럽게 복구 (`RecoilRecoverySpeed`).
+1. **화면 튕김 및 부드러운 자동 복구 (Smooth Spring-Lerp Recoil):**
+   - 격발 시 카메라 피치(상하)가 즉각적인 1프레임 꺾임 없이 `_recoilSnappiness`(기본 25f, 약 0.06초) 속도로 매끄럽고 타격감 있게 위로 튕김 (`RecoilPitch`).
+   - 미세 좌우 흔들림이 특정 방향으로 편향되지 않고 좌우 랜덤(`Random.Range(-yaw, yaw)`)으로 카메라 타겟에 분산 (`RecoilYaw`).
+   - 발사 후 마우스 조작이 멈추면 원래 조준점 위치로 부드럽게 지수 감쇄 복구 (`RecoilRecoverySpeed`).
    - 샷건은 수직 피치 3.5 ~ 4.5도의 묵직한 반동 세팅.
+2. **마우스 수동 반동 제어 (Recoil Compensation):**
+   - 사격 중 플레이어가 마우스를 아래로 당길 경우, 마우스 하향 입력량이 반동 목표치(`_targetRecoil`) 및 현재 반동치에서 즉각 차감(상쇄)되어 1:1 직관적인 에임 제어를 제공.
+   - 반동을 수동으로 잡은 후 사격을 중단해도 조준선이 시작점보다 더 아래로 내려가는 역방향 오버슛(Overshoot) 현상 방지.
 
 ---
 
-### 6) 연출 및 피드백 (VFX, SFX, HUD)
+### 6) 연출 및 피드백 (VFX, SFX, HUD, 데칼)
 1. **비주얼 & 사운드:**
    - **발사자(1인칭):** 즉각적인 격발음, 총구 화염(Muzzle Flash), 탄 궤적(Tracer Line), 화면 반동.
    - **피격 지점:** 타격 지점 표면 재질(살점, 금속, 콘크리트 등)에 맞춘 파티클 풀링 스폰.
+   - **총탄 구멍(Bullet Hole) 데칼 시스템 (`DecalPoolManager`, URP `DecalProjector`):**
+     - **풀링 및 수명 정책:** 최대 128개 제한, 8초 유지 후 1초간 페이드아웃(총 9초) 후 자동 회수. 한도 초과 시 가장 오래된 데칼 즉시 강제 회수(FIFO).
+     - **반응성(0ms 예측):** 로컬 사격 시 지연 없이 0ms 즉시 데칼 스폰, 원격 클라이언트는 `ClientRpc` 수신 시 스폰하여 네트워크 트래픽 0byte 유지 및 중복 생성 방지.
+     - **몬스터/캐릭터 처리(방안 A):** 살점(`SurfaceType.Flesh`), 플레이어 및 몬스터 피격 시에는 데칼을 남기지 않고 혈흔 파티클만 출력.
+     - **산탄총(샷건):** 8발 펠릿 탄착 지점마다 각각 데칼 개별 스폰.
+     - **예외 처리:** 모서리 늘어짐 방지(Z-depth 0.15m + Angle Fade 50~75도), 이동 물체 추적 시 부모-자식 종속을 배제하여 부모의 비균등 스케일(`lossyScale`) 왜곡 완벽 차단, 파괴 가능한 오브젝트 소멸 시 데칼 즉시 풀 회수.
    - **샷건 전용 세분화 사운드:** `ReloadStartSound`, `ReloadInsertSound`, `ReloadEndSound`.
 2. **HUD 표시:**
    - 화면 우측 하단: `[ 현재 탄창 잔탄 / 인벤토리 소지 탄약수 ]` (예: `8 / 24`).
@@ -219,6 +228,7 @@ public class GunItemData : ItemData
     [SerializeField] private float _recoilPitch = 1.8f;
     [SerializeField] private float _recoilYaw = 0.4f;
     [SerializeField] private float _recoilRecoverySpeed = 8.0f;
+    [SerializeField] private float _recoilSnappiness = 25.0f;
 
     [Header("Audio & Visuals")]
     [SerializeField] private AudioClip _fireSound;

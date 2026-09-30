@@ -29,7 +29,8 @@ MonoBehaviour:
   _useLeftHandIK: 0
   _leftHandIKLocalPosition: {x: 0, y: 0, z: 0}
   _leftHandIKLocalRotation: {x: 0, y: 0, z: 0}
+  _animatorOverrideController: {fileID: 0}
   _actionType: 2
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 7902786585589273995, guid: e2bc87a7bdfc4d2449a04b4b58be0c09, type: 3}
-  _holdPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 4354250416460993298, guid: 3cc20a57635a8464d9ba20dfc9280197, type: 3}

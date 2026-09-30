@@ -64,13 +64,18 @@ public class GunItemData : ItemData
     [Tooltip("장전 종료 후딜레이(초) - 펌프 차징 및 정자세 복귀")]
     [SerializeField] private float _reloadEndDelay = 0.3f;
 
-    [Header("Recoil Settings (Screen Kick)")]
-    [Tooltip("격발 시 화면이 위로 튕기는 피치 각도")]
+    [Header("Recoil Settings (화면 반동 및 복구 제어)")]
+    [Tooltip("1회 격발 시 화면이 위로 튕기는 수직 각도(도).\n- 값을 올릴수록 화면이 위로 크게 치솟습니다.\n- 추천: 권총 1.5~2.0, 소총 1.2~1.8, 샷건 3.5~4.5")]
     [SerializeField] private float _recoilPitch = 1.5f;
-    [Tooltip("격발 시 좌우로 미세하게 흔들리는 요 각도 범위")]
+
+    [Tooltip("격발 시 좌우로 흔들리는 랜덤 요(Yaw) 각도 범위(±도).\n- 값을 올릴수록 좌우 진동 폭이 커져 에임 제어가 까다로워집니다.\n- 추천: 0.2 ~ 0.8")]
     [SerializeField] private float _recoilYaw = 0.35f;
-    [Tooltip("반동 후 원래 조준선 위치로 복귀하는 부드러운 속도")]
+
+    [Tooltip("사격 후 원래 조준점 위치로 복귀(회복)하는 속도.\n- 값을 낮출수록(예: 4~6) 복구가 느려져 연사 시 에임이 위로 누적되어 치솟습니다.\n- 값을 높일수록(예: 12~15) 사격 직후 원래 자리로 잽싸게 복귀합니다.")]
     [SerializeField] private float _recoilRecoverySpeed = 10f;
+
+    [Tooltip("반동 튕김 반응 속도(Snappiness / 킥 가속도).\n- 값을 높일수록(예: 30~40) 턱! 하고 빠르고 날카로운 타격감으로 튕깁니다.\n- 값을 낮출수록(예: 12~18) 부드럽고 묵직하게 솟아오릅니다.\n- 추천: 20 ~ 35 (기본값: 25)")]
+    [SerializeField] private float _recoilSnappiness = 25f;
 
     [Header("Sprint & Movement Penalty Settings")]
     [Tooltip("전력 질주(달리기) 상태에서 사격 시 첫 발 발사까지 걸리는 선딜레이(초)")]
@@ -120,6 +125,7 @@ public class GunItemData : ItemData
     public float RecoilPitch => _recoilPitch;
     public float RecoilYaw => _recoilYaw;
     public float RecoilRecoverySpeed => _recoilRecoverySpeed;
+    public float RecoilSnappiness => _recoilSnappiness > 0.01f ? _recoilSnappiness : 25f;
 
     public float SprintToFireDelay => Mathf.Max(0f, _sprintToFireDelay);
     public float ShootingMovementMultiplier => Mathf.Clamp(_shootingMovementMultiplier, 0.1f, 1f);

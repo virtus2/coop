@@ -35,7 +35,7 @@ MonoBehaviour:
   _actionType: 1
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 995891173655068131, guid: eeb418d36cd1ae643870459b26ce5005, type: 3}
-  _holdPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 680334975435539687, guid: 9c1caff20aca72549b334cd16810b982, type: 3}
   _baseDamage: 80
   _fireInterval: 0.8
   _maxRange: 15
@@ -58,6 +58,7 @@ MonoBehaviour:
   _recoilPitch: 4
   _recoilYaw: 0.8
   _recoilRecoverySpeed: 10
+  _recoilSnappiness: 25
   _sprintToFireDelay: 0.18
   _shootingMovementMultiplier: 0.75
   _fireSound: {fileID: 0}

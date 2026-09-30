@@ -155,6 +155,13 @@ public class PlayerCharacterIK : MonoBehaviour
             Vector3 targetIKPos = gunTransform.TransformPoint(heldItem.LeftHandIKLocalPosition);
             Quaternion targetIKRot = gunTransform.rotation * Quaternion.Euler(heldItem.LeftHandIKLocalRotation);
 
+            var visual = heldInstance.GetComponent<HeldItemVisual>();
+            if (visual != null && visual.LeftHandIKTarget != null)
+            {
+                targetIKPos = visual.LeftHandIKTarget.position;
+                targetIKRot = visual.LeftHandIKTarget.rotation;
+            }
+
             _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, _currentLeftHandWeight);
             _animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, _currentLeftHandWeight);
             _animator.SetIKPosition(AvatarIKGoal.LeftHand, targetIKPos);

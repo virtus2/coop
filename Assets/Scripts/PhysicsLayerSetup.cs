@@ -30,12 +30,13 @@ public static class PhysicsLayerSetup
         // 1. 아이템끼리의 충돌 비활성화 (지터링 방지 및 물리 CPU 절감)
         Physics.IgnoreLayerCollision(pickableLayer, pickableLayer, true);
 
-        // 2. 아이템과 플레이어(캐릭터) 간 충돌 비활성화 (던질 때 및 이동 시 캐릭터와 충돌 방지)
+        // 2. 플레이어(CharacterController)와 물리 아이템 간 충돌 활성화
+        // OnControllerColliderHit을 통해 서버 측에서 물리 객체 밀기 및 질량 기반 감속이 정상 작동하도록 합니다.
         int playerLayer = LayerMask.NameToLayer(PLAYER_LAYER_NAME);
         if (playerLayer >= 0)
         {
-            Physics.IgnoreLayerCollision(pickableLayer, playerLayer, true);
-            Debug.Log($"<color=cyan>[PhysicsLayerSetup]</color> '{PICKABLE_LAYER_NAME}' 레이어 간 및 '{PLAYER_LAYER_NAME}' 레이어와의 충돌을 비활성화했습니다.");
+            Physics.IgnoreLayerCollision(pickableLayer, playerLayer, false);
+            Debug.Log($"<color=cyan>[PhysicsLayerSetup]</color> '{PICKABLE_LAYER_NAME}' 레이어 간 충돌 비활성화 및 '{PLAYER_LAYER_NAME}' 레이어와의 충돌을 활성화(OnControllerColliderHit 지원)했습니다.");
         }
         else
         {

@@ -5,12 +5,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// 월드 상에 물리적/시각적으로 존재하는 플레이어 캐릭터(아바타) 컴포넌트입니다.
-/// Rigidbody 기반의 물리 이동, 점프, 스태미나, 1인칭/3인칭 머리 회전 및 피치 동기화, 피격 및 반동 처리를 담당합니다.
+/// 월드 상에 시각적/물리적으로 존재하는 플레이어 캐릭터(아바타) 컴포넌트입니다.
+/// CharacterController 기반으로 부드러운 이동, 점프, 스태미나, 1인칭/3인칭 머리 회전 및 피치 동기화를 처리하며,
+/// OnControllerColliderHit을 통해 서버 전담 물리 객체 밀기 및 질량 기반 이동 저항(감속)을 수행합니다.
 /// 네트워크 상의 플레이어 세션(NetworkPlayer)에 의해 빙의(Possess)되어 제어됩니다.
 /// </summary>
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(CapsuleCollider))]
 public class PlayerCharacter : NetworkBehaviour
 {
     public static PlayerCharacter LocalInstance { get; protected set; }
@@ -45,6 +44,12 @@ public class PlayerCharacter : NetworkBehaviour
     [Tooltip("탈진 후 다시 달리기 위해 필요한 최소 스태미나")]
     [SerializeField] private float _exhaustionRecoveryThreshold = 1.4f;
 
+    [Header("Physics Push Settings")]
+    [Tooltip("플레이어가 밀어낼 때 가해지는 기본 충격량")]
+    [SerializeField] private float _pushPower = 3.0f;
+    [Tooltip("완전 감속(최대 70% 감속)에 도달하는 물리 객체의 최대 기준 질량(kg)")]
+    [SerializeField] private float _maxPushableMass = 100f;
+
     [Header("Camera FOV Settings")]
     [Tooltip("달릴 때 증가할 카메라 FOV 오프셋")]
     [SerializeField] private float _sprintFovOffset = 8f;
@@ -58,31 +63,36 @@ public class PlayerCharacter : NetworkBehaviour
     [SerializeField] protected Transform _cameraTarget;
     [SerializeField] protected CinemachineCamera _firstPersonCamera;
 
+    [Header("Recoil Settings")]
+    [Tooltip("기본 반동 튕김 속도(Snappiness). 높을수록 빠르고 경쾌하게 튕김")]
+    [SerializeField] private float _defaultRecoilSnappiness = 25f;
+
+    // 런타임 반동 상태 변수
+    private Vector2 _targetRecoil = Vector2.zero;
+    private Vector2 _currentRecoil = Vector2.zero;
+    private float _activeRecoilRecoverySpeed = 10f;
+    private float _activeRecoilSnappiness = 25f;
+
     [Header("Head Settings")]
     [SerializeField] protected Transform _headTransform;
-    [Tooltip("머리가 아래를 바라볼 때의 각도 상한선 (Pitch 최대값, 바닥에 눈이 꽂히지 않도록 제한. 기본값: 30도)")]
+    [Tooltip("머리가 아래를 바라볼 때의 각도 상한선 (Pitch 최대값)")]
     [SerializeField] private float _headTopClamp = 30f;
-    [Tooltip("머리가 위를 바라볼 때의 각도 하한선 (Pitch 최소값. 기본값: -40도)")]
+    [Tooltip("머리가 위를 바라볼 때의 각도 하한선 (Pitch 최소값)")]
     [SerializeField] private float _headBottomClamp = -40f;
     [SerializeField] private Renderer _bodyRenderer;
 
     [Header("Input Action References")]
-    [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Move'를 자동으로 로드합니다.")]
     [SerializeField] private InputActionReference _moveActionReference;
-    [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Look'을 자동으로 로드합니다.")]
     [SerializeField] private InputActionReference _lookActionReference;
-    [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Sprint'를 자동으로 로드합니다.")]
     [SerializeField] private InputActionReference _sprintActionReference;
-    [Tooltip("비워둘 경우 기본 InputActionAsset(InputSystem_Actions)에서 'Player/Jump'를 자동으로 로드합니다.")]
     [SerializeField] private InputActionReference _jumpActionReference;
 
     [Header("Input Asset Fallback")]
     [SerializeField] private InputActionAsset _inputActionsAsset;
 
+    protected CharacterController _characterController;
     protected Rigidbody _rigidbody;
     protected CapsuleCollider _capsuleCollider;
-    [Obsolete("CharacterController is deprecated. Use Rigidbody for physics movement.")]
-    protected CharacterController _characterController;
     protected ClientNetworkTransform _clientNetworkTransform;
     protected Animator _animator;
     protected PlayerCharacterIK _characterIK;
@@ -93,14 +103,19 @@ public class PlayerCharacter : NetworkBehaviour
     protected float _cameraPitch;
     protected bool _isInputEnabled = true;
 
-    // 물리 이동 및 지면 감지 상태
+    // 이동 및 수직 속도
     protected bool _isGrounded;
-    protected RaycastHit _groundHit;
+    private float _verticalVelocity;
     private bool _isJumpQueued;
     private float _jumpCooldownTimer;
     private float _knockbackTimer;
-    private PhysicsMaterial _frictionlessMaterial;
+    private Vector3 _knockbackVelocity;
 
+    // 물리 밀기 감속 변수
+    private float _pushSpeedMultiplier = 1f;
+    private float _pushPenaltyTimer;
+
+    public CharacterController CharacterController => _characterController;
     public Rigidbody Rigidbody => _rigidbody;
     public CapsuleCollider CapsuleCollider => _capsuleCollider;
     public bool IsGrounded => _isGrounded;
@@ -123,12 +138,6 @@ public class PlayerCharacter : NetworkBehaviour
     // 달리기 강제 취소(스프린트 락) 쿨다운
     private float _sprintLockDuration = 0f;
 
-    // 반동 복구 제어 변수
-    private float _recoilPitchRecoveryVelocity;
-    private float _recoilYawRecoveryVelocity;
-    private float _currentRecoilPitchOffset = 0f;
-    private float _currentRecoilYawOffset = 0f;
-
     private readonly NetworkVariable<bool> _networkIsSprinting = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -144,7 +153,10 @@ public class PlayerCharacter : NetworkBehaviour
     public bool IsSprinting => (!IsSpawned || IsOwner) ? _isSprinting : _networkIsSprinting.Value;
     public float CurrentStamina => _currentStamina;
     public float MaxStamina => _maxStamina;
-    public float CameraPitch => IsOwner ? _cameraPitch : _networkCameraPitch.Value;
+    public float CameraPitch => IsOwner ? Mathf.Clamp(_cameraPitch - _currentRecoil.x, _bottomClamp, _topClamp) : _networkCameraPitch.Value;
+    public float BaseCameraPitch => _cameraPitch;
+    public Vector2 CurrentRecoil => _currentRecoil;
+    public Vector2 TargetRecoil => _targetRecoil;
     public Transform CameraTarget => _cameraTarget;
 
     // 소유 세션 플레이어 참조
@@ -180,53 +192,32 @@ public class PlayerCharacter : NetworkBehaviour
 
     protected virtual void Awake()
     {
-        // 1. 레거시 CharacterController는 물리 연산(PhysX) 충돌 방지를 위해 즉시 제거
+        // 1. CharacterController 초기화 (무한 질량 Kinematic 벽체 역할)
         _characterController = GetComponent<CharacterController>();
-        if (_characterController != null)
+        if (_characterController == null)
         {
-            _characterController.enabled = false;
-            Destroy(_characterController);
-            _characterController = null;
+            _characterController = gameObject.AddComponent<CharacterController>();
         }
+        _characterController.height = 2.0f;
+        _characterController.radius = 0.45f;
+        _characterController.center = new Vector3(0f, 1f, 0f);
+        _characterController.stepOffset = 0.3f;
+        _characterController.slopeLimit = _slopeLimit;
+        _characterController.minMoveDistance = 0.001f;
 
-        // 2. 지면 레이어 기본값 검증 (인스펙터 미할당 시 전체 레이어 사용)
-        if (_groundLayers.value == 0)
-        {
-            _groundLayers = ~0;
-        }
-
-        // 3. Rigidbody 설정 (Y축 회전은 자유롭게 두어 마우스 회전 시 물리 튐 방지)
+        // 2. 외부 호환용 Rigidbody 설정 (PhysX 직접 충돌 간섭 방지를 위해 isKinematic 설정)
         _rigidbody = GetComponent<Rigidbody>();
-        if (_rigidbody == null)
+        if (_rigidbody != null)
         {
-            _rigidbody = gameObject.AddComponent<Rigidbody>();
+            _rigidbody.isKinematic = true;
         }
-        _rigidbody.mass = _mass;
-        _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
-        _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        _rigidbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        _rigidbody.useGravity = true;
 
-        // 4. CapsuleCollider 설정
+        // 3. 중복 캡슐 콜라이더 비활성화
         _capsuleCollider = GetComponent<CapsuleCollider>();
-        if (_capsuleCollider == null)
+        if (_capsuleCollider != null)
         {
-            _capsuleCollider = gameObject.AddComponent<CapsuleCollider>();
+            _capsuleCollider.enabled = false;
         }
-        _capsuleCollider.center = new Vector3(0f, 1f, 0f);
-        _capsuleCollider.height = 2f;
-        _capsuleCollider.radius = 0.45f;
-
-        // 벽에 비벼도 달라붙지 않도록 마찰력 0 머티리얼 적용
-        _frictionlessMaterial = new PhysicsMaterial("PlayerFrictionless")
-        {
-            dynamicFriction = 0f,
-            staticFriction = 0f,
-            frictionCombine = PhysicsMaterialCombine.Minimum,
-            bounciness = 0f,
-            bounceCombine = PhysicsMaterialCombine.Minimum
-        };
-        _capsuleCollider.material = _frictionlessMaterial;
 
         _clientNetworkTransform = GetComponent<ClientNetworkTransform>();
 
@@ -306,11 +297,6 @@ public class PlayerCharacter : NetworkBehaviour
     {
         if (!IsSpawned)
         {
-            if (_rigidbody != null)
-            {
-                _rigidbody.isKinematic = false;
-            }
-
             LocalInstance = this;
             _isInputEnabled = true;
 
@@ -331,11 +317,6 @@ public class PlayerCharacter : NetworkBehaviour
     {
         if (IsOwner)
         {
-            if (_rigidbody != null)
-            {
-                _rigidbody.isKinematic = false;
-            }
-
             LocalInstance = this;
             _isInputEnabled = true;
 
@@ -357,11 +338,6 @@ public class PlayerCharacter : NetworkBehaviour
         }
         else
         {
-            if (_rigidbody != null)
-            {
-                _rigidbody.isKinematic = true;
-            }
-
             if (_firstPersonCamera != null)
             {
                 _firstPersonCamera.gameObject.SetActive(false);
@@ -378,7 +354,6 @@ public class PlayerCharacter : NetworkBehaviour
 
     private void BindCamera()
     {
-        // 1인칭 카메라는 CameraTarget의 자식이므로 타겟 추적을 해제하고 로컬 (0,0,0)에 고정
         if (_firstPersonCamera != null)
         {
             _firstPersonCamera.Target.TrackingTarget = null;
@@ -389,7 +364,6 @@ public class PlayerCharacter : NetworkBehaviour
             _firstPersonCamera.Priority.Value = 20;
         }
 
-        // 씬 카메라 컨트롤러가 존재하면 캐릭터 머리를 타겟으로 설정
         if (PlayerCameraController.Instance != null && _cameraTarget != null)
         {
             PlayerCameraController.Instance.SetCharacterTarget(_cameraTarget);
@@ -416,7 +390,6 @@ public class PlayerCharacter : NetworkBehaviour
         {
             if (r != null)
             {
-                // 손에 든 무기 비주얼(HeldItemVisual_1P, HeldItemVisual_3P)은 PlayerItemHolder가 자체 관리하므로 제외
                 if (r.gameObject.name.StartsWith("HeldItemVisual"))
                 {
                     continue;
@@ -445,7 +418,6 @@ public class PlayerCharacter : NetworkBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
-            // 캐릭터가 사라질 때 카메라를 기지 코어 관전 시점으로 전환
             if (PlayerCameraController.Instance != null)
             {
                 PlayerCameraController.Instance.SetCoreTarget();
@@ -468,12 +440,6 @@ public class PlayerCharacter : NetworkBehaviour
             {
                 PlayerCameraController.Instance.SetCoreTarget();
             }
-        }
-
-        if (_frictionlessMaterial != null)
-        {
-            Destroy(_frictionlessMaterial);
-            _frictionlessMaterial = null;
         }
 
         base.OnDestroy();
@@ -536,22 +502,10 @@ public class PlayerCharacter : NetworkBehaviour
             _jumpAction = FindAction("Player/Jump");
         }
 
-        if (_moveAction != null)
-        {
-            _moveAction.Enable();
-        }
-        if (_lookAction != null)
-        {
-            _lookAction.Enable();
-        }
-        if (_sprintAction != null)
-        {
-            _sprintAction.Enable();
-        }
-        if (_jumpAction != null)
-        {
-            _jumpAction.Enable();
-        }
+        _moveAction?.Enable();
+        _lookAction?.Enable();
+        _sprintAction?.Enable();
+        _jumpAction?.Enable();
     }
 
     private InputAction FindAction(string actionPath)
@@ -590,20 +544,11 @@ public class PlayerCharacter : NetworkBehaviour
         }
 
         HandleLook();
+        UpdateRecoil();
         HandleSprintAndStamina();
         HandleJumpInput();
+        HandleCharacterMovement();
         UpdateCameraFov();
-    }
-
-    protected virtual void FixedUpdate()
-    {
-        if (IsSpawned && !IsOwner)
-        {
-            return;
-        }
-
-        UpdateGroundCheck();
-        HandlePhysicsMovement();
     }
 
     private void HandleJumpInput()
@@ -624,60 +569,21 @@ public class PlayerCharacter : NetworkBehaviour
         }
     }
 
-    private void UpdateGroundCheck()
+    private void HandleCharacterMovement()
     {
-        if (_knockbackTimer > 0f)
+        if (_characterController == null || !_characterController.enabled)
         {
-            _knockbackTimer -= Time.fixedDeltaTime;
-            _isGrounded = false;
             return;
         }
 
-        // Player 레이어 제외 마스크
-        int playerLayerMask = 1 << gameObject.layer;
-        LayerMask mask = _groundLayers & ~playerLayerMask;
-
-        // 1. 먼저 정중앙에서 아래로 정밀 Raycast 시도 (타일 솔기 모서리 오감지 및 노멀 튐 방지)
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.2f;
-        float rayDistance = 0.2f + _groundCheckDistance + 0.1f;
-
-        RaycastHit[] rayHits = Physics.RaycastAll(rayOrigin, Vector3.down, rayDistance, mask, QueryTriggerInteraction.Ignore);
-        _isGrounded = false;
-        foreach (var hit in rayHits)
+        // 물리 객체 충돌 감속 타이머 갱신
+        if (_pushPenaltyTimer > 0f)
         {
-            if (hit.collider == null || hit.collider.transform.root == transform) continue;
-            float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
-            if (slopeAngle <= _slopeLimit)
+            _pushPenaltyTimer -= Time.deltaTime;
+            if (_pushPenaltyTimer <= 0f)
             {
-                _groundHit = hit;
-                _isGrounded = true;
-                return;
+                _pushSpeedMultiplier = 1f;
             }
-        }
-
-        // 2. 중앙 Raycast가 빗나간 경우(계단이나 난간 모서리에 걸친 경우) 보조로 SphereCast 수행
-        Vector3 origin = transform.position + Vector3.up * (_groundCheckRadius + 0.1f);
-        float castDistance = _groundCheckDistance + 0.1f;
-
-        RaycastHit[] hits = Physics.SphereCastAll(origin, _groundCheckRadius, Vector3.down, castDistance, mask, QueryTriggerInteraction.Ignore);
-        foreach (var hit in hits)
-        {
-            if (hit.collider == null || hit.collider.transform.root == transform) continue;
-            float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
-            if (slopeAngle <= _slopeLimit)
-            {
-                _groundHit = hit;
-                _isGrounded = true;
-                break;
-            }
-        }
-    }
-
-    private void HandlePhysicsMovement()
-    {
-        if (_rigidbody == null || _rigidbody.isKinematic)
-        {
-            return;
         }
 
         Vector2 moveInput = Vector2.zero;
@@ -692,121 +598,101 @@ public class PlayerCharacter : NetworkBehaviour
             move.Normalize();
         }
 
-        float effectiveSpeed = _currentSpeed * _speedPenaltyMultiplier;
+        float effectiveSpeed = _currentSpeed * _speedPenaltyMultiplier * _pushSpeedMultiplier;
 
-        // 1. 점프 처리
-        if (_isJumpQueued && _isGrounded)
-        {
-            _isJumpQueued = false;
-            _jumpCooldownTimer = 0.25f;
-            _isGrounded = false;
-
-            Vector3 currentVel = _rigidbody.linearVelocity;
-            _rigidbody.linearVelocity = new Vector3(currentVel.x, _jumpForce, currentVel.z);
-        }
-
-        // 2. 넉백 진행 중일 때: 입력에 의한 강제 감속을 막고 미세한 공중 제어만 허용
-        if (_knockbackTimer > 0f)
-        {
-            if (move.sqrMagnitude > 0.01f)
-            {
-                _rigidbody.AddForce(move * (effectiveSpeed * _airControl * 0.5f), ForceMode.Acceleration);
-            }
-            return;
-        }
-
-        // 3. 지면 및 공중 이동 처리
+        // 1. 지면 및 수직 속도 처리
+        _isGrounded = _characterController.isGrounded;
         if (_isGrounded)
         {
-            float slopeAngle = Vector3.Angle(_groundHit.normal, Vector3.up);
-            Vector3 currentVel = _rigidbody.linearVelocity;
-
-            // [상용 물리 게임 표준 패턴: 축 분리 (Decoupled Axes)]
-            // 평지(경사각 1도 미만)에서는 수평 XZ축만 조작하고, Y축 속도는 PhysX의 안정된 접촉 솔버에 위임하여
-            // 중력과 충돌 반발력 간의 50Hz 미세 진동(침투-튕김)을 완전히 제거합니다.
-            if (slopeAngle < 1.0f)
+            if (_verticalVelocity < 0f)
             {
-                Vector3 targetHorizontal = move * effectiveSpeed;
-                Vector3 currentHorizontal = new Vector3(currentVel.x, 0f, currentVel.z);
-
-                Vector3 newHorizontal = Vector3.MoveTowards(
-                    currentHorizontal,
-                    targetHorizontal,
-                    _accelerationRate * Time.fixedDeltaTime
-                );
-
-                // 평지에서 튀어 오르는 것을 방지하기 위해 미세한 상향 튐만 0으로 완화
-                float yVel = currentVel.y;
-                if (yVel > 0.05f)
-                {
-                    yVel = 0f;
-                }
-
-                _rigidbody.linearVelocity = new Vector3(newHorizontal.x, yVel, newHorizontal.z);
+                _verticalVelocity = -2f; // 지면에 안정적으로 밀착되도록 미세한 하향 속도 유지
             }
-            else
+
+            if (_isJumpQueued && _jumpCooldownTimer <= 0f)
             {
-                // 경사면일 때는 경사면을 따라 미끄러지거나 뜨지 않도록 경사면 투영 속도 적용
-                Vector3 slopeMoveDir = Vector3.ProjectOnPlane(move, _groundHit.normal).normalized;
-                Vector3 targetVelocity = slopeMoveDir * (effectiveSpeed * move.magnitude);
-
-                Vector3 currentHorizontal = new Vector3(currentVel.x, 0f, currentVel.z);
-                Vector3 targetHorizontal = new Vector3(targetVelocity.x, 0f, targetVelocity.z);
-
-                Vector3 newHorizontal = Vector3.MoveTowards(
-                    currentHorizontal,
-                    targetHorizontal,
-                    _accelerationRate * Time.fixedDeltaTime
-                );
-
-                float yVel = targetVelocity.y;
-                if (move.sqrMagnitude <= 0.01f)
-                {
-                    yVel = 0f; // 경사면 정지 시 미끄러짐 방지
-                }
-
-                _rigidbody.linearVelocity = new Vector3(newHorizontal.x, yVel, newHorizontal.z);
+                _isJumpQueued = false;
+                _jumpCooldownTimer = 0.25f;
+                _verticalVelocity = _jumpForce;
+                _isGrounded = false;
             }
         }
         else
         {
-            // 급경사 미끄러짐 처리
-            if (_groundHit.collider != null && Vector3.Angle(_groundHit.normal, Vector3.up) > _slopeLimit)
+            float gravity = Physics.gravity.y;
+            if (_verticalVelocity < 0f && _fallGravityMultiplier > 1f)
             {
-                Vector3 slideDir = Vector3.ProjectOnPlane(Vector3.down, _groundHit.normal).normalized;
-                _rigidbody.AddForce(slideDir * 20f, ForceMode.Acceleration);
+                gravity *= _fallGravityMultiplier;
             }
-
-            // 공중 제어 (Air Control)
-            if (move.sqrMagnitude > 0.01f)
-            {
-                Vector3 airForce = move * (effectiveSpeed * _airControl);
-                _rigidbody.AddForce(airForce, ForceMode.Acceleration);
-
-                // 수평 최대 속도 제한
-                Vector3 horiz = new Vector3(_rigidbody.linearVelocity.x, 0f, _rigidbody.linearVelocity.z);
-                if (horiz.sqrMagnitude > effectiveSpeed * effectiveSpeed)
-                {
-                    horiz = horiz.normalized * effectiveSpeed;
-                    _rigidbody.linearVelocity = new Vector3(horiz.x, _rigidbody.linearVelocity.y, horiz.z);
-                }
-            }
-
-            // 낙하 가속도 (빠른 착지감 제공)
-            if (_rigidbody.linearVelocity.y < 0f && _fallGravityMultiplier > 1f)
-            {
-                _rigidbody.AddForce(Physics.gravity * (_fallGravityMultiplier - 1f), ForceMode.Acceleration);
-            }
+            _verticalVelocity += gravity * Time.deltaTime;
         }
+
+        // 2. 최종 이동 벡터 계산 및 실행
+        Vector3 motion = (move * effectiveSpeed) + (Vector3.up * _verticalVelocity);
+
+        // 3. 넉백 속도 합성
+        if (_knockbackTimer > 0f)
+        {
+            _knockbackTimer -= Time.deltaTime;
+            motion += _knockbackVelocity;
+            _knockbackVelocity = Vector3.Lerp(_knockbackVelocity, Vector3.zero, Time.deltaTime * 5f);
+        }
+
+        _characterController.Move(motion * Time.deltaTime);
 
         // 애니메이터 파라미터 업데이트
         if (_animator != null)
         {
-            _animator.SetFloat("MoveX", moveInput.x, 0.1f, Time.fixedDeltaTime);
-            _animator.SetFloat("MoveY", moveInput.y, 0.1f, Time.fixedDeltaTime);
+            _animator.SetFloat("MoveX", moveInput.x, 0.1f, Time.deltaTime);
+            _animator.SetFloat("MoveY", moveInput.y, 0.1f, Time.deltaTime);
             _animator.SetBool("IsSprinting", _isSprinting);
             _animator.SetBool("IsMoving", moveInput.sqrMagnitude > 0.01f);
             _animator.SetFloat("Speed", moveInput.sqrMagnitude > 0.01f ? effectiveSpeed : 0f);
+        }
+    }
+
+    /// <summary>
+    /// CharacterController가 이동하면서 다른 콜라이더(물리 객체)와 충돌했을 때 실행됩니다.
+    /// 서버 측에서 물리 객체에 추진력을 가하고, 질량에 비례하여 플레이어 이동 속도를 감속시킵니다.
+    /// </summary>
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Rigidbody body = hit.collider.attachedRigidbody;
+        if (body == null || body.isKinematic)
+        {
+            return;
+        }
+
+        // 발밑 바닥 충돌은 제외 (밟고 서 있는 바닥 물체 밀기 방지)
+        if (hit.moveDirection.y < -0.3f)
+        {
+            return;
+        }
+
+        // 1. 호스트(서버) 측: 물리 객체에 힘 가하기
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer || !IsSpawned)
+        {
+            Vector3 pushDir = new Vector3(hit.moveDirection.x, 0f, hit.moveDirection.z);
+            if (pushDir.sqrMagnitude < 0.001f)
+            {
+                pushDir = transform.forward;
+            }
+
+            body.AddForceAtPosition(pushDir * _pushPower, hit.point, ForceMode.Impulse);
+
+            if (hit.collider.TryGetComponent<PickableItem>(out var pickable))
+            {
+                pickable.WakeUpPhysics();
+            }
+        }
+
+        // 2. 플레이어 이동 속도 저항 (질량 기반 자동 계산)
+        if (IsOwner || !IsSpawned)
+        {
+            float propMass = body.mass;
+            float resistance = Mathf.Clamp01(propMass / _maxPushableMass);
+            _pushSpeedMultiplier = Mathf.Max(0.2f, 1f - (resistance * 0.7f));
+            _pushPenaltyTimer = 0.15f;
         }
     }
 
@@ -822,34 +708,81 @@ public class PlayerCharacter : NetworkBehaviour
         float mouseX = lookInput.x * _mouseSensitivity;
         float mouseY = lookInput.y * _mouseSensitivity;
 
-        _cameraPitch -= mouseY;
+        // 마우스 상하(Pitch) 조작 및 반동 상쇄(Recoil Compensation) 처리
+        if (mouseY < 0f && _targetRecoil.x > 0.001f)
+        {
+            // 사용자가 마우스를 아래로 당겨 반동을 제어(Pull-down)하는 경우
+            float pullDown = -mouseY;
+            if (pullDown <= _targetRecoil.x)
+            {
+                // 반동 목표치 및 현재 반동에서 즉각 차감하여 에임 제어 반응성 100% 보장
+                _targetRecoil.x -= pullDown;
+                _currentRecoil.x = Mathf.Max(0f, _currentRecoil.x - pullDown);
+            }
+            else
+            {
+                // 반동을 모두 상쇄하고 남은 초과분만 기본 시선 피치에 반영
+                float excess = pullDown - _targetRecoil.x;
+                _targetRecoil.x = 0f;
+                _currentRecoil.x = 0f;
+                _cameraPitch += excess;
+            }
+        }
+        else
+        {
+            _cameraPitch -= mouseY;
+        }
+
         _cameraPitch = Mathf.Clamp(_cameraPitch, _bottomClamp, _topClamp);
+
+        transform.Rotate(Vector3.up * mouseX);
+    }
+
+    /// <summary>
+    /// 사격 등으로 누적된 반동을 스무스하게 튕기게 하고(Snappy Kick),
+    /// 원래 조준점 위치로 부드럽게 감쇄 및 복구(Smooth Ease-out Recovery)합니다.
+    /// </summary>
+    private void UpdateRecoil()
+    {
+        float dt = Time.deltaTime;
+        if (dt > 0f)
+        {
+            // 1. 목표 반동 감쇄 (부드러운 복구 / Return to Center)
+            _targetRecoil.x = Mathf.Lerp(_targetRecoil.x, 0f, dt * _activeRecoilRecoverySpeed);
+            _targetRecoil.y = Mathf.Lerp(_targetRecoil.y, 0f, dt * _activeRecoilRecoverySpeed);
+
+            if (_targetRecoil.sqrMagnitude < 0.00001f)
+            {
+                _targetRecoil = Vector2.zero;
+            }
+
+            // 2. 현재 반동 보간 (스무스 킥 & 복구 추적)
+            _currentRecoil.x = Mathf.Lerp(_currentRecoil.x, _targetRecoil.x, dt * _activeRecoilSnappiness);
+            _currentRecoil.y = Mathf.Lerp(_currentRecoil.y, _targetRecoil.y, dt * _activeRecoilSnappiness);
+
+            if (_currentRecoil.sqrMagnitude < 0.00001f && _targetRecoil == Vector2.zero)
+            {
+                _currentRecoil = Vector2.zero;
+            }
+        }
+
+        // 3. 최종 시선 회전 합성 (기본 피치 - 반동 피치, 반동 요)
+        float totalPitch = Mathf.Clamp(_cameraPitch - _currentRecoil.x, _bottomClamp, _topClamp);
+        float totalYaw = _currentRecoil.y;
 
         if (_cameraTarget != null)
         {
-            _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+            _cameraTarget.localRotation = Quaternion.Euler(totalPitch, totalYaw, 0f);
         }
 
         if (_headTransform != null)
         {
-            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
+            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(totalPitch), 0f, 0f);
         }
 
         if (IsSpawned && IsOwner)
         {
-            _networkCameraPitch.Value = _cameraPitch;
-        }
-
-        // Rigidbody를 통한 안전한 수평 물리 회전 (FreezeRotationY 방지 및 PhysX 동기화)
-        if (_rigidbody != null && !_rigidbody.isKinematic)
-        {
-            Quaternion newRot = transform.rotation * Quaternion.Euler(0f, mouseX, 0f);
-            _rigidbody.MoveRotation(newRot);
-            transform.rotation = newRot;
-        }
-        else
-        {
-            transform.Rotate(Vector3.up * mouseX);
+            _networkCameraPitch.Value = totalPitch;
         }
     }
 
@@ -939,8 +872,6 @@ public class PlayerCharacter : NetworkBehaviour
         }
     }
 
-
-
     private void UpdateCameraFov()
     {
         if (_firstPersonCamera != null)
@@ -978,35 +909,26 @@ public class PlayerCharacter : NetworkBehaviour
         _currentSpeed = _moveSpeed;
     }
 
-    public void ApplyRecoil(float pitchOffset, float yawOffset, float recoverySpeed = 10f)
+    /// <summary>
+    /// 사격 시 발생하는 카메라 반동을 적용합니다.
+    /// pitchOffset: 상향 각도, yawOffset: 좌우 흔들림 최대 범위, recoverySpeed: 원래 조준점으로 복귀하는 속도, snappiness: 반동 튕김 반응 속도.
+    /// </summary>
+    public void ApplyRecoil(float pitchOffset, float yawOffset, float recoverySpeed = 10f, float snappiness = 25f)
     {
         if (!IsOwner && IsSpawned)
         {
             return;
         }
 
-        _cameraPitch -= pitchOffset;
-        _cameraPitch = Mathf.Clamp(_cameraPitch, _bottomClamp, _topClamp);
+        _activeRecoilRecoverySpeed = Mathf.Max(1f, recoverySpeed);
+        _activeRecoilSnappiness = Mathf.Max(1f, snappiness > 0.01f ? snappiness : _defaultRecoilSnappiness);
 
-        if (_cameraTarget != null)
-        {
-            _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
-        }
+        // 상향 피치 반동 누적 (상한선 25도)
+        _targetRecoil.x = Mathf.Clamp(_targetRecoil.x + pitchOffset, 0f, 25f);
 
-        if (_headTransform != null)
-        {
-            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
-        }
-
-        if (IsSpawned && IsOwner)
-        {
-            _networkCameraPitch.Value = _cameraPitch;
-        }
-
-        if (Mathf.Abs(yawOffset) > 0.001f)
-        {
-            transform.Rotate(Vector3.up * yawOffset);
-        }
+        // 좌우 랜덤 요 반동 분산 (-15도 ~ 15도)
+        float randomYaw = UnityEngine.Random.Range(-yawOffset, yawOffset);
+        _targetRecoil.y = Mathf.Clamp(_targetRecoil.y + randomYaw, -15f, 15f);
     }
 
     public void SetInputEnabled(bool enabled)
@@ -1038,21 +960,21 @@ public class PlayerCharacter : NetworkBehaviour
             _characterController.enabled = false;
         }
 
-        if (_rigidbody != null)
-        {
-            _rigidbody.linearVelocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
-            _rigidbody.position = targetPosition;
-            _rigidbody.rotation = targetRotation;
-        }
-
         transform.position = targetPosition;
         transform.rotation = targetRotation;
 
         _cameraPitch = cameraPitch;
+        _targetRecoil = Vector2.zero;
+        _currentRecoil = Vector2.zero;
+
         if (_cameraTarget != null)
         {
             _cameraTarget.localRotation = Quaternion.Euler(_cameraPitch, 0f, 0f);
+        }
+
+        if (_headTransform != null)
+        {
+            _headTransform.localRotation = Quaternion.Euler(GetClampedHeadPitch(_cameraPitch), 0f, 0f);
         }
 
         if (_characterController != null)
@@ -1074,87 +996,51 @@ public class PlayerCharacter : NetworkBehaviour
 
     #region Knockback APIs
 
-    /// <summary>
-    /// 외부 컴포넌트(폭발, 몬스터 피격, 트랩 등)에서 캐릭터에 충격량을 가할 때 호출합니다.
-    /// 네트워크 소유자(Owner)의 Rigidbody에 즉시 물리 힘이 전달됩니다.
-    /// </summary>
-    /// <param name="force">가할 물리 힘 벡터 (방향 * 세기)</param>
-    /// <param name="mode">힘 적용 모드 (기본값: ForceMode.Impulse)</param>
     public void ApplyKnockback(Vector3 force, ForceMode mode = ForceMode.Impulse)
     {
         if (!IsSpawned || IsOwner)
         {
-            ApplyKnockbackInternal(force, mode);
+            ApplyKnockbackInternal(force);
         }
         else if (IsServer)
         {
-            ApplyKnockbackClientRpc(force, mode);
+            ApplyKnockbackClientRpc(force);
         }
     }
 
-    /// <summary>
-    /// 폭발 중심점과 반경을 기반으로 폭발 넉백을 가합니다.
-    /// </summary>
     public void ApplyExplosionKnockback(Vector3 explosionPosition, float explosionForce, float explosionRadius, float upwardsModifier = 0.5f)
     {
-        if (!IsSpawned || IsOwner)
-        {
-            ApplyExplosionKnockbackInternal(explosionPosition, explosionForce, explosionRadius, upwardsModifier);
-        }
-        else if (IsServer)
-        {
-            ApplyExplosionKnockbackClientRpc(explosionPosition, explosionForce, explosionRadius, upwardsModifier);
-        }
-    }
-
-    [ClientRpc]
-    private void ApplyKnockbackClientRpc(Vector3 force, ForceMode mode)
-    {
-        if (IsOwner)
-        {
-            ApplyKnockbackInternal(force, mode);
-        }
-    }
-
-    [ClientRpc]
-    private void ApplyExplosionKnockbackClientRpc(Vector3 explosionPosition, float explosionForce, float explosionRadius, float upwardsModifier)
-    {
-        if (IsOwner)
-        {
-            ApplyExplosionKnockbackInternal(explosionPosition, explosionForce, explosionRadius, upwardsModifier);
-        }
-    }
-
-    private void ApplyKnockbackInternal(Vector3 force, ForceMode mode)
-    {
-        if (_rigidbody == null || _rigidbody.isKinematic)
+        Vector3 dir = (transform.position - explosionPosition);
+        float distance = dir.magnitude;
+        if (distance > explosionRadius || distance < 0.001f)
         {
             return;
         }
 
-        // 지면 마찰로 인해 넉백이 씹히지 않도록 공중으로 살짝 띄우고 넉백 타이머 활성화
+        dir /= distance;
+        dir.y += upwardsModifier;
+        dir.Normalize();
+
+        float falloff = 1f - (distance / explosionRadius);
+        Vector3 force = dir * (explosionForce * falloff);
+
+        ApplyKnockback(force);
+    }
+
+    [ClientRpc]
+    private void ApplyKnockbackClientRpc(Vector3 force)
+    {
+        if (IsOwner)
+        {
+            ApplyKnockbackInternal(force);
+        }
+    }
+
+    private void ApplyKnockbackInternal(Vector3 force)
+    {
+        _knockbackVelocity = force;
         _knockbackTimer = 0.35f;
         _isGrounded = false;
-
-        // 수평 힘만 강하게 들어올 경우 최소 Y축 상승력을 보장하여 통쾌하게 날아가도록 보정
-        if (force.y < 1f && force.sqrMagnitude > 4f)
-        {
-            force += Vector3.up * Mathf.Clamp(force.magnitude * 0.25f, 1.5f, 5f);
-        }
-
-        _rigidbody.AddForce(force, mode);
-    }
-
-    private void ApplyExplosionKnockbackInternal(Vector3 explosionPosition, float explosionForce, float explosionRadius, float upwardsModifier)
-    {
-        if (_rigidbody == null || _rigidbody.isKinematic)
-        {
-            return;
-        }
-
-        _knockbackTimer = 0.4f;
-        _isGrounded = false;
-        _rigidbody.AddExplosionForce(explosionForce, explosionPosition, explosionRadius, upwardsModifier, ForceMode.Impulse);
     }
 
     #endregion

@@ -34,7 +34,7 @@ MonoBehaviour:
   _actionType: 5
   _placeableBuildingPrefab: {fileID: 0}
   _worldPrefab: {fileID: 7443172046965286640, guid: 8a4f368c2fc31e14a88920e491bc689b, type: 3}
-  _holdPrefab: {fileID: 0}
+  _holdPrefab: {fileID: 7670422816525942102, guid: 74ae1c8a6415f8641b877635ec450b6f, type: 3}
   _baseDamage: 35
   _attackInterval: 0.6
   _windupDuration: 0.18

@@ -566,6 +566,31 @@ public class PlayerMeleeCombat : NetworkBehaviour
                 );
             }
         }
+        else if (hitCollider.TryGetComponent<PickableItem>(out var pickable) || hitCollider.attachedRigidbody != null)
+        {
+            // 물리 객체 (PickableItem / DynamicProp / Rigidbody) 타격
+            SurfaceType surfaceType = DetermineSurfaceType(hitCollider);
+            PlayWallHitSound(hitPoint);
+            SpawnImpactEffect(hitPoint, hitNormal, surfaceType);
+
+            Vector3 knockbackDir = aimRay.direction;
+            knockbackDir.Normalize();
+            float force = _currentMeleeData != null ? _currentMeleeData.KnockbackForce : 5.0f;
+
+            if (pickable != null)
+            {
+                pickable.ApplyImpulse(knockbackDir * force, hitPoint);
+            }
+            else if (hitCollider.attachedRigidbody != null && !hitCollider.attachedRigidbody.isKinematic)
+            {
+                hitCollider.attachedRigidbody.AddForceAtPosition(knockbackDir * force, hitPoint, ForceMode.Impulse);
+            }
+
+            if (IsSpawned)
+            {
+                RequestMeleeWallHitServerRpc(hitPoint, hitNormal, (byte)surfaceType);
+            }
+        }
         else
         {
             // 환경 벽이나 지형에 충돌

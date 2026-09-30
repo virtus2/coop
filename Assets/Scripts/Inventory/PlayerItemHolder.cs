@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -20,15 +21,12 @@ public class PlayerItemHolder : NetworkBehaviour
     [Tooltip("1인칭 카메라 앞 소켓 (비어있으면 'CameraTarget/HoldPoint' 자동 탐색)")]
     [SerializeField] private Transform _firstPersonHoldPoint;
 
-    // 1인칭 뷰모델 (로컬 플레이어 카메라 화면 전용)
-    private GameObject _heldVisual1P;
-    private MeshFilter _heldMeshFilter1P;
-    private MeshRenderer _heldMeshRenderer1P;
+    // 1인칭 및 3인칭 소켓에 스폰된 프리팹 캐싱
+    private Dictionary<string, GameObject> _spawnedPrefabs1P = new Dictionary<string, GameObject>();
+    private Dictionary<string, GameObject> _spawnedPrefabs3P = new Dictionary<string, GameObject>();
 
-    // 3인칭 월드모델 (오른손 소켓, 그림자 투영 및 원격 플레이어, 왼손 IK 기준)
-    private GameObject _heldVisual3P;
-    private MeshFilter _heldMeshFilter3P;
-    private MeshRenderer _heldMeshRenderer3P;
+    private GameObject _activePrefab1P;
+    private GameObject _activePrefab3P;
 
     private ItemData _currentHeldItemData;
     private ItemData _pendingHeldItemData; // 바닥에서 주워 아직 툴바에 등록되지 않은 손 아이템
@@ -42,9 +40,9 @@ public class PlayerItemHolder : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
-    public GameObject CurrentHeldInstance => (_currentHeldItemData != null && _heldVisual1P != null && _heldVisual1P.activeSelf) ? _heldVisual1P : ((_currentHeldItemData != null && _heldVisual3P != null && _heldVisual3P.activeSelf) ? _heldVisual3P : null);
-    public GameObject FirstPersonHeldInstance => (_currentHeldItemData != null && _heldVisual1P != null && _heldVisual1P.activeSelf) ? _heldVisual1P : null;
-    public GameObject ThirdPersonHeldInstance => (_currentHeldItemData != null && _heldVisual3P != null && _heldVisual3P.activeSelf) ? _heldVisual3P : null;
+    public GameObject CurrentHeldInstance => (_currentHeldItemData != null && _activePrefab1P != null && _activePrefab1P.activeSelf) ? _activePrefab1P : ((_currentHeldItemData != null && _activePrefab3P != null && _activePrefab3P.activeSelf) ? _activePrefab3P : null);
+    public GameObject FirstPersonHeldInstance => (_currentHeldItemData != null && _activePrefab1P != null && _activePrefab1P.activeSelf) ? _activePrefab1P : null;
+    public GameObject ThirdPersonHeldInstance => (_currentHeldItemData != null && _activePrefab3P != null && _activePrefab3P.activeSelf) ? _activePrefab3P : null;
 
     public ItemData CurrentHeldItemData => _currentHeldItemData;
     public ItemData PendingHeldItemData => _pendingHeldItemData;
@@ -57,7 +55,6 @@ public class PlayerItemHolder : NetworkBehaviour
     private void Awake()
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
     }
 
     private void EnsureComponents()
@@ -115,106 +112,11 @@ public class PlayerItemHolder : NetworkBehaviour
         }
     }
 
-    private void EnsureHeldVisualSockets()
-    {
-        Ensure1PHeldSocket();
-        Ensure3PHeldSocket();
-    }
 
-    private void Ensure1PHeldSocket()
-    {
-        Transform target1P = Get1PHoldTarget();
-        if (target1P == null) return;
-
-        if (_heldVisual1P == null)
-        {
-            Transform found = target1P.Find("HeldItemVisual_1P");
-            if (found == null) found = target1P.Find("HeldItemVisual");
-
-            if (found != null)
-            {
-                _heldVisual1P = found.gameObject;
-                _heldVisual1P.name = "HeldItemVisual_1P";
-            }
-            else
-            {
-                _heldVisual1P = new GameObject("HeldItemVisual_1P");
-                _heldVisual1P.transform.SetParent(target1P, false);
-                _heldVisual1P.transform.localPosition = Vector3.zero;
-                _heldVisual1P.transform.localRotation = Quaternion.identity;
-                _heldVisual1P.transform.localScale = Vector3.one;
-            }
-        }
-
-        if (_heldVisual1P.transform.parent != target1P)
-        {
-            _heldVisual1P.transform.SetParent(target1P, false);
-        }
-
-        _heldVisual1P.layer = target1P.gameObject.layer;
-
-        if (_heldMeshFilter1P == null)
-        {
-            _heldMeshFilter1P = _heldVisual1P.GetComponent<MeshFilter>();
-            if (_heldMeshFilter1P == null) _heldMeshFilter1P = _heldVisual1P.AddComponent<MeshFilter>();
-        }
-
-        if (_heldMeshRenderer1P == null)
-        {
-            _heldMeshRenderer1P = _heldVisual1P.GetComponent<MeshRenderer>();
-            if (_heldMeshRenderer1P == null) _heldMeshRenderer1P = _heldVisual1P.AddComponent<MeshRenderer>();
-        }
-    }
-
-    private void Ensure3PHeldSocket()
-    {
-        Transform target3P = Get3PHoldTarget();
-        if (target3P == null) return;
-
-        if (_heldVisual3P == null)
-        {
-            Transform found = target3P.Find("HeldItemVisual_3P");
-            if (found == null) found = target3P.Find("HeldItemVisual");
-
-            if (found != null)
-            {
-                _heldVisual3P = found.gameObject;
-                _heldVisual3P.name = "HeldItemVisual_3P";
-            }
-            else
-            {
-                _heldVisual3P = new GameObject("HeldItemVisual_3P");
-                _heldVisual3P.transform.SetParent(target3P, false);
-                _heldVisual3P.transform.localPosition = Vector3.zero;
-                _heldVisual3P.transform.localRotation = Quaternion.identity;
-                _heldVisual3P.transform.localScale = Vector3.one;
-            }
-        }
-
-        if (_heldVisual3P.transform.parent != target3P)
-        {
-            _heldVisual3P.transform.SetParent(target3P, false);
-        }
-
-        _heldVisual3P.layer = target3P.gameObject.layer;
-
-        if (_heldMeshFilter3P == null)
-        {
-            _heldMeshFilter3P = _heldVisual3P.GetComponent<MeshFilter>();
-            if (_heldMeshFilter3P == null) _heldMeshFilter3P = _heldVisual3P.AddComponent<MeshFilter>();
-        }
-
-        if (_heldMeshRenderer3P == null)
-        {
-            _heldMeshRenderer3P = _heldVisual3P.GetComponent<MeshRenderer>();
-            if (_heldMeshRenderer3P == null) _heldMeshRenderer3P = _heldVisual3P.AddComponent<MeshRenderer>();
-        }
-    }
 
     private void Start()
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
 
         if (!IsSpawned || IsOwner)
         {
@@ -230,7 +132,6 @@ public class PlayerItemHolder : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
 
         _networkHeldItemId.OnValueChanged += HandleNetworkHeldItemChanged;
 
@@ -296,7 +197,6 @@ public class PlayerItemHolder : NetworkBehaviour
     public void UpdateHeldItem(int slotIndex)
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
 
         // 1. 바닥에서 주워 아직 툴바에 넣지 않은 손 아이템이 있는 경우:
         //    툴바 슬롯 인덱스가 -1이더라도 손 아이템 비주얼을 유지합니다.
@@ -343,64 +243,41 @@ public class PlayerItemHolder : NetworkBehaviour
     private void ApplyLocalHeldVisual(ItemData itemData)
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
-
         _currentHeldItemData = itemData;
 
-        Mesh mesh = itemData.HeldMesh;
-        Material mat = itemData.HeldMaterial;
+        if (_activePrefab1P != null) _activePrefab1P.SetActive(false);
+        if (_activePrefab3P != null) _activePrefab3P.SetActive(false);
+        _activePrefab1P = null;
+        _activePrefab3P = null;
 
-        // Fallback: HeldMesh나 HeldMaterial이 비어있다면 WorldPrefab에서 탐색
-        if (mesh == null && itemData.WorldPrefab != null)
+        if (itemData != null && itemData.HoldPrefab != null)
         {
-            var mf = itemData.WorldPrefab.GetComponentInChildren<MeshFilter>(true);
-            if (mf != null) mesh = mf.sharedMesh;
-        }
-        if (mat == null && itemData.WorldPrefab != null)
-        {
-            var mr = itemData.WorldPrefab.GetComponentInChildren<MeshRenderer>(true);
-            if (mr != null) mat = mr.sharedMaterial;
-        }
-
-        if (mesh != null)
-        {
-            // 1. 1인칭 뷰모델 (카메라 앞 소켓 - 로컬 화면 표시, 그림자 투영 안 함)
-            if (_heldMeshFilter1P != null && _heldMeshRenderer1P != null && _heldVisual1P != null)
+            _activePrefab1P = GetOrCreatePrefab1P(itemData);
+            if (_activePrefab1P != null)
             {
-                _heldMeshFilter1P.sharedMesh = mesh;
-                _heldMeshRenderer1P.sharedMaterial = mat;
-                _heldMeshRenderer1P.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                _heldMeshRenderer1P.enabled = true;
-
-                _heldVisual1P.transform.localPosition = itemData.HeldLocalPosition;
-                _heldVisual1P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation);
-                _heldVisual1P.transform.localScale = itemData.HeldLocalScale;
-                _heldVisual1P.SetActive(true);
+                _activePrefab1P.transform.localPosition = itemData.HeldLocalPosition;
+                _activePrefab1P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation);
+                _activePrefab1P.transform.localScale = itemData.HeldLocalScale;
+                _activePrefab1P.SetActive(true);
             }
 
-            // 2. 3인칭 월드모델 (오른손 소켓 - 로컬에서는 ShadowsOnly로 전신 그림자 투영 및 왼손 IK 기준 제공)
-            if (_heldMeshFilter3P != null && _heldMeshRenderer3P != null && _heldVisual3P != null)
+            _activePrefab3P = GetOrCreatePrefab3P(itemData);
+            if (_activePrefab3P != null)
             {
-                _heldMeshFilter3P.sharedMesh = mesh;
-                _heldMeshRenderer3P.sharedMaterial = mat;
-                _heldMeshRenderer3P.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
-                _heldMeshRenderer3P.enabled = true;
-
-                _heldVisual3P.transform.localPosition = itemData.HeldLocalPosition3P;
-                _heldVisual3P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation3P);
-                _heldVisual3P.transform.localScale = itemData.HeldLocalScale3P;
-                _heldVisual3P.SetActive(true);
+                _activePrefab3P.transform.localPosition = itemData.HeldLocalPosition3P;
+                _activePrefab3P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation3P);
+                _activePrefab3P.transform.localScale = itemData.HeldLocalScale3P;
+                
+                var visual = _activePrefab3P.GetComponent<HeldItemVisual>();
+                if (visual != null) visual.SetShadowCastingMode(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly);
+                
+                _activePrefab3P.SetActive(true);
             }
-        }
-        else
-        {
-            if (_heldVisual1P != null) _heldVisual1P.SetActive(false);
-            if (_heldVisual3P != null) _heldVisual3P.SetActive(false);
         }
 
         if (_interaction != null)
         {
-            _interaction.OnHeldItemChanged(_heldVisual1P ?? _heldVisual3P, itemData);
+            _interaction.OnHeldItemChanged(_activePrefab1P ?? _activePrefab3P, itemData);
         }
 
         UpdateAnimatorOverride(itemData);
@@ -415,7 +292,11 @@ public class PlayerItemHolder : NetworkBehaviour
         if (IsOwner) return;
 
         EnsureComponents();
-        EnsureHeldVisualSockets();
+
+        if (_activePrefab1P != null) _activePrefab1P.SetActive(false);
+        if (_activePrefab3P != null) _activePrefab3P.SetActive(false);
+        _activePrefab1P = null;
+        _activePrefab3P = null;
 
         if (string.IsNullOrEmpty(itemId))
         {
@@ -424,26 +305,7 @@ public class PlayerItemHolder : NetworkBehaviour
         }
 
         ItemData itemData = ItemDatabase.GetItem(itemId);
-        if (itemData == null)
-        {
-            ClearHeldVisual();
-            return;
-        }
-
-        Mesh mesh = itemData.HeldMesh;
-        Material mat = itemData.HeldMaterial;
-        if (mesh == null && itemData.WorldPrefab != null)
-        {
-            var mf = itemData.WorldPrefab.GetComponentInChildren<MeshFilter>(true);
-            if (mf != null) mesh = mf.sharedMesh;
-        }
-        if (mat == null && itemData.WorldPrefab != null)
-        {
-            var mr = itemData.WorldPrefab.GetComponentInChildren<MeshRenderer>(true);
-            if (mr != null) mat = mr.sharedMaterial;
-        }
-
-        if (mesh == null)
+        if (itemData == null || itemData.HoldPrefab == null)
         {
             ClearHeldVisual();
             return;
@@ -451,24 +313,17 @@ public class PlayerItemHolder : NetworkBehaviour
 
         _currentHeldItemData = itemData;
 
-        // 원격 플레이어 화면에서는 1인칭 뷰모델 비활성화
-        if (_heldVisual1P != null)
+        _activePrefab3P = GetOrCreatePrefab3P(itemData);
+        if (_activePrefab3P != null)
         {
-            _heldVisual1P.SetActive(false);
-        }
-
-        // 3인칭 월드모델 활성화 및 표시 (그림자 On)
-        if (_heldMeshFilter3P != null && _heldMeshRenderer3P != null && _heldVisual3P != null)
-        {
-            _heldMeshFilter3P.sharedMesh = mesh;
-            _heldMeshRenderer3P.sharedMaterial = mat;
-            _heldMeshRenderer3P.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            _heldMeshRenderer3P.enabled = true;
-
-            _heldVisual3P.transform.localPosition = itemData.HeldLocalPosition3P;
-            _heldVisual3P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation3P);
-            _heldVisual3P.transform.localScale = itemData.HeldLocalScale3P;
-            _heldVisual3P.SetActive(true);
+            _activePrefab3P.transform.localPosition = itemData.HeldLocalPosition3P;
+            _activePrefab3P.transform.localRotation = Quaternion.Euler(itemData.HeldLocalRotation3P);
+            _activePrefab3P.transform.localScale = itemData.HeldLocalScale3P;
+            
+            var visual = _activePrefab3P.GetComponent<HeldItemVisual>();
+            if (visual != null) visual.SetShadowCastingMode(UnityEngine.Rendering.ShadowCastingMode.On);
+            
+            _activePrefab3P.SetActive(true);
         }
 
         UpdateAnimatorOverride(itemData);
@@ -478,17 +333,12 @@ public class PlayerItemHolder : NetworkBehaviour
     private void ClearHeldVisual()
     {
         EnsureComponents();
-        EnsureHeldVisualSockets();
-
         _currentHeldItemData = null;
 
-        if (_heldMeshFilter1P != null) _heldMeshFilter1P.sharedMesh = null;
-        if (_heldMeshRenderer1P != null) _heldMeshRenderer1P.sharedMaterial = null;
-        if (_heldVisual1P != null) _heldVisual1P.SetActive(false);
-
-        if (_heldMeshFilter3P != null) _heldMeshFilter3P.sharedMesh = null;
-        if (_heldMeshRenderer3P != null) _heldMeshRenderer3P.sharedMaterial = null;
-        if (_heldVisual3P != null) _heldVisual3P.SetActive(false);
+        if (_activePrefab1P != null) _activePrefab1P.SetActive(false);
+        if (_activePrefab3P != null) _activePrefab3P.SetActive(false);
+        _activePrefab1P = null;
+        _activePrefab3P = null;
 
         if (_interaction != null)
         {
@@ -497,6 +347,55 @@ public class PlayerItemHolder : NetworkBehaviour
 
         UpdateAnimatorOverride(null);
         NotifyCombatHeldItemChanged(null);
+    }
+
+    private GameObject GetOrCreatePrefab1P(ItemData itemData)
+    {
+        if (_spawnedPrefabs1P.TryGetValue(itemData.ItemId, out GameObject instance))
+        {
+            return instance;
+        }
+
+        Transform target1P = Get1PHoldTarget();
+        if (target1P == null) return null;
+
+        instance = Instantiate(itemData.HoldPrefab, target1P);
+        instance.name = "Held_" + itemData.ItemId + "_1P";
+        
+        var visual = instance.GetComponent<HeldItemVisual>();
+        if (visual != null)
+        {
+            visual.SetLayerRecursively(target1P.gameObject.layer);
+            visual.SetShadowCastingMode(UnityEngine.Rendering.ShadowCastingMode.Off);
+        }
+
+        _spawnedPrefabs1P[itemData.ItemId] = instance;
+        instance.SetActive(false);
+        return instance;
+    }
+
+    private GameObject GetOrCreatePrefab3P(ItemData itemData)
+    {
+        if (_spawnedPrefabs3P.TryGetValue(itemData.ItemId, out GameObject instance))
+        {
+            return instance;
+        }
+
+        Transform target3P = Get3PHoldTarget();
+        if (target3P == null) return null;
+
+        instance = Instantiate(itemData.HoldPrefab, target3P);
+        instance.name = "Held_" + itemData.ItemId + "_3P";
+        
+        var visual = instance.GetComponent<HeldItemVisual>();
+        if (visual != null)
+        {
+            visual.SetLayerRecursively(target3P.gameObject.layer);
+        }
+
+        _spawnedPrefabs3P[itemData.ItemId] = instance;
+        instance.SetActive(false);
+        return instance;
     }
 
     private void UpdateAnimatorOverride(ItemData itemData)
@@ -629,7 +528,11 @@ public class PlayerItemHolder : NetworkBehaviour
         }
         else
         {
-            if (Application.isPlaying)
+            if (NetworkObjectPool.Instance != null && netObj != null)
+            {
+                NetworkObjectPool.Instance.ReturnNetworkObject(netObj);
+            }
+            else if (Application.isPlaying)
             {
                 Destroy(worldItem.gameObject);
             }
@@ -687,6 +590,11 @@ public class PlayerItemHolder : NetworkBehaviour
         {
             // 오프라인 / 테스트 환경: 로컬에서 WorldPrefab 생성 및 물리 속도 부여
             GameObject worldPrefab = heldItem.WorldPrefab;
+            if (worldPrefab == null)
+            {
+                worldPrefab = Resources.Load<GameObject>("Prefabs/GenericWorldItem");
+            }
+
             if (worldPrefab != null)
             {
                 var dropped = Instantiate(worldPrefab, dropPosition, dropRotation);
@@ -936,7 +844,14 @@ public class PlayerItemHolder : NetworkBehaviour
             {
                 if (netObj != null && netObj.IsSpawned)
                 {
-                    netObj.Despawn(true);
+                    if (NetworkObjectPool.Instance != null)
+                    {
+                        NetworkObjectPool.Instance.ReturnNetworkObject(netObj);
+                    }
+                    else
+                    {
+                        netObj.Despawn(true);
+                    }
                 }
             }
         }
@@ -955,29 +870,41 @@ public class PlayerItemHolder : NetworkBehaviour
     private void RequestDropItemServerRpc(string itemId, Vector3 dropPosition, Quaternion dropRotation, Vector3 throwVelocity)
     {
         ItemData itemData = ItemDatabase.GetItem(itemId);
-        if (itemData != null && itemData.WorldPrefab != null)
+        if (itemData != null)
         {
-            GameObject droppedObj = Instantiate(itemData.WorldPrefab, dropPosition, dropRotation);
-            var pickable = droppedObj.GetComponent<PickableItem>();
-            if (pickable != null)
+            GameObject prefabToSpawn = itemData.WorldPrefab;
+            if (prefabToSpawn == null)
             {
-                pickable.ItemData = itemData;
-                pickable.SetInitialDropPhysics(throwVelocity);
-            }
-            else
-            {
-                var rb = droppedObj.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = false;
-                    rb.linearVelocity = throwVelocity;
-                }
+                prefabToSpawn = Resources.Load<GameObject>("Prefabs/GenericWorldItem");
             }
 
-            var netObj = droppedObj.GetComponent<NetworkObject>();
-            if (netObj != null)
+            if (prefabToSpawn != null)
             {
-                netObj.Spawn(true);
+                NetworkObject netObj = null;
+                if (NetworkObjectPool.Instance != null)
+                {
+                    netObj = NetworkObjectPool.Instance.GetNetworkObject(prefabToSpawn, dropPosition, dropRotation);
+                }
+                else
+                {
+                    GameObject droppedObj = Instantiate(prefabToSpawn, dropPosition, dropRotation);
+                    netObj = droppedObj.GetComponent<NetworkObject>();
+                }
+
+                if (netObj != null)
+                {
+                    var pickable = netObj.GetComponent<PickableItem>();
+                    if (pickable != null)
+                    {
+                        pickable.ItemData = itemData;
+                        pickable.SetInitialDropPhysics(throwVelocity);
+                    }
+
+                    if (!netObj.IsSpawned)
+                    {
+                        netObj.Spawn(true);
+                    }
+                }
             }
         }
 

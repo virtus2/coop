@@ -598,8 +598,36 @@ public class PlayerGunCombat : NetworkBehaviour
         else
         {
             // 일반 총기 로컬 예측 및 서버 단일 레이캐스트 요청
-            ExecuteLocalFirePrediction(isCharged);
+            ExecuteLocalFirePrediction(isCharged, aimRay);
             RequestFireServerRpc(aimRay.origin, aimRay.direction, isCharged, NetworkManager.Singleton.LocalClientId);
+        }
+    }
+
+    private void PlayFireVisuals()
+    {
+        Transform muzzlePoint = null;
+        if (_playerItemHolder != null && _playerItemHolder.CurrentHeldInstance != null)
+        {
+            var visual = _playerItemHolder.CurrentHeldInstance.GetComponent<HeldItemVisual>();
+            if (visual != null)
+            {
+                muzzlePoint = visual.MuzzlePoint;
+                // 탄약이 남아있는 경우(즉, 사격 성공 시) 무기 자체 애니메이션 재생
+                if (visual.WeaponAnimator != null)
+                {
+                    visual.WeaponAnimator.SetTrigger("Fire");
+                }
+            }
+        }
+
+        if (_currentGunData.MuzzleFlashPrefab != null)
+        {
+            Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
+            Vector3 spawnPos = muzzlePoint != null ? muzzlePoint.position : holdPoint.position + holdPoint.forward * 0.4f;
+            Quaternion spawnRot = muzzlePoint != null ? muzzlePoint.rotation : holdPoint.rotation;
+            Transform parentTransform = muzzlePoint != null ? muzzlePoint : holdPoint;
+
+            Instantiate(_currentGunData.MuzzleFlashPrefab, spawnPos, spawnRot, parentTransform);
         }
     }
 
@@ -616,14 +644,7 @@ public class PlayerGunCombat : NetworkBehaviour
         // 반동 적용
         if (_playerController != null)
         {
-            _playerController.ApplyRecoil(_currentGunData.RecoilPitch, _currentGunData.RecoilYaw, _currentGunData.RecoilRecoverySpeed);
-        }
-
-        // 총구 화염 스폰
-        Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
-        if (_currentGunData.MuzzleFlashPrefab != null && holdPoint != null)
-        {
-            Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
+            _playerController.ApplyRecoil(_currentGunData.RecoilPitch, _currentGunData.RecoilYaw, _currentGunData.RecoilRecoverySpeed, _currentGunData.RecoilSnappiness);
         }
 
         if (_animator != null)
@@ -632,8 +653,10 @@ public class PlayerGunCombat : NetworkBehaviour
             _animator.SetFloat("FireSpeed", fireSpeed);
             _animator.SetTrigger("Fire");
         }
+        
+        PlayFireVisuals();
 
-        // 로컬 8가닥 탄 궤적(Tracer Line) 즉시 렌더링 (0ms 체감)
+        // 로컬 8가닥 탄 궤적(Tracer Line) 및 총탄 구멍 데칼 즉시 렌더링 (0ms 체감)
         Vector3[] dirs = GenerateConeDirections(direction, _currentGunData.SpreadAngle, _currentGunData.PelletCount, seed);
         for (int i = 0; i < dirs.Length; i++)
         {
@@ -641,12 +664,17 @@ public class PlayerGunCombat : NetworkBehaviour
             if (Physics.Raycast(origin, dirs[i], out RaycastHit hit, _currentGunData.MaxRange, ~0, QueryTriggerInteraction.Ignore))
             {
                 targetPoint = hit.point;
+                SurfaceType surfaceType = DetermineSurfaceType(hit.collider);
+                if (surfaceType != SurfaceType.Flesh)
+                {
+                    DecalPoolManager.Instance.SpawnBulletHole(hit.point, hit.normal, surfaceType, hit.collider.transform);
+                }
             }
             SpawnTracer(origin, targetPoint);
         }
     }
 
-    private void ExecuteLocalFirePrediction(bool isCharged)
+    private void ExecuteLocalFirePrediction(bool isCharged, Ray aimRay)
     {
         if (_currentGunData == null) return;
 
@@ -661,7 +689,7 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             float pitch = _currentGunData.RecoilPitch * (isCharged ? 1.4f : 1.0f);
             float yaw = _currentGunData.RecoilYaw * (isCharged ? 1.4f : 1.0f);
-            _playerController.ApplyRecoil(pitch, yaw, _currentGunData.RecoilRecoverySpeed);
+            _playerController.ApplyRecoil(pitch, yaw, _currentGunData.RecoilRecoverySpeed, _currentGunData.RecoilSnappiness);
         }
 
         if (_animator != null)
@@ -671,11 +699,16 @@ public class PlayerGunCombat : NetworkBehaviour
             _animator.SetTrigger("Fire");
         }
 
-        // 총구 화염(Muzzle Flash) 로컬 생성
-        Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
-        if (_currentGunData.MuzzleFlashPrefab != null && holdPoint != null)
+        PlayFireVisuals();
+
+        // 일반 총기 로컬 탄흔 데칼 즉시 생성 (0ms 반응성)
+        if (Physics.Raycast(aimRay, out RaycastHit hit, _currentGunData.MaxRange, ~0, QueryTriggerInteraction.Ignore))
         {
-            Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
+            SurfaceType surfaceType = DetermineSurfaceType(hit.collider);
+            if (surfaceType != SurfaceType.Flesh)
+            {
+                DecalPoolManager.Instance.SpawnBulletHole(hit.point, hit.normal, surfaceType, hit.collider.transform);
+            }
         }
     }
 
@@ -795,6 +828,18 @@ public class PlayerGunCombat : NetworkBehaviour
                     Debug.Log($"[Server] IDamageable 적중! 대상: {damageable.transform.name}, 데미지: {damageToApply} (차지: {isCharged})");
                 }
             }
+
+            // 4. 물리 객체(PickableItem / Rigidbody) 외력 전달
+            if (hit.collider.TryGetComponent<PickableItem>(out var pickable))
+            {
+                float impulseForce = damageToApply * 0.15f;
+                pickable.ApplyImpulse(direction * impulseForce, hitPoint);
+            }
+            else if (hit.rigidbody != null && !hit.rigidbody.isKinematic)
+            {
+                float impulseForce = damageToApply * 0.15f;
+                hit.rigidbody.AddForceAtPosition(direction * impulseForce, hitPoint, ForceMode.Impulse);
+            }
         }
 
         // 모든 클라이언트에 피격 지점 먼지/파편 이펙트 브로드캐스트
@@ -837,14 +882,7 @@ public class PlayerGunCombat : NetworkBehaviour
                 AudioSource.PlayClipAtPoint(_currentGunData.FireSound, origin);
             }
 
-            if (_currentGunData.MuzzleFlashPrefab != null)
-            {
-                Transform holdPoint = _playerInteraction != null ? _playerInteraction.HoldPoint : transform;
-                if (holdPoint != null)
-                {
-                    Instantiate(_currentGunData.MuzzleFlashPrefab, holdPoint.position + holdPoint.forward * 0.4f, holdPoint.rotation, holdPoint);
-                }
-            }
+            PlayFireVisuals();
         }
 
         // 2. 피격 지점에 재질별 파티클 스폰 (데미지 유무 무관하게 표면 히트 시 항상 출력)
@@ -852,6 +890,17 @@ public class PlayerGunCombat : NetworkBehaviour
         {
             SurfaceType surfaceType = (SurfaceType)surfaceTypeByte;
             SpawnImpactEffect(hitPoint, hitNormal, surfaceType);
+
+            // 원격 플레이어 사격일 경우 데칼 스폰 (로컬 플레이어는 발사 순간 0ms 선반영 완료)
+            if (!IsOwner && surfaceType != SurfaceType.Flesh)
+            {
+                Transform hitTarget = null;
+                if (Physics.Raycast(hitPoint + hitNormal * 0.05f, -hitNormal, out RaycastHit rHit, 0.15f, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    hitTarget = rHit.collider.transform;
+                }
+                DecalPoolManager.Instance.SpawnBulletHole(hitPoint, hitNormal, surfaceType, hitTarget);
+            }
         }
 
         // 3. 탄 궤적(Tracer) 렌더링
@@ -1017,6 +1066,18 @@ public class PlayerGunCombat : NetworkBehaviour
                         acc.BodyDamage += currentPelletDamage;
                     }
                 }
+
+                // 5. 물리 객체(PickableItem / Rigidbody) 외력 전달
+                if (hit.collider.TryGetComponent<PickableItem>(out var pickable))
+                {
+                    float impulseForce = currentPelletDamage * 0.15f;
+                    pickable.ApplyImpulse(dir * impulseForce, hit.point);
+                }
+                else if (hit.rigidbody != null && !hit.rigidbody.isKinematic)
+                {
+                    float impulseForce = currentPelletDamage * 0.15f;
+                    hit.rigidbody.AddForceAtPosition(dir * impulseForce, hit.point, ForceMode.Impulse);
+                }
             }
         }
 
@@ -1080,6 +1141,17 @@ public class PlayerGunCombat : NetworkBehaviour
                 {
                     SurfaceType surfaceType = (SurfaceType)surfaceTypes[i];
                     SpawnImpactEffect(hitPoints[i], hitNormals[i], surfaceType);
+
+                    // 원격 플레이어 사격일 경우 8발 데칼 스폰 (로컬 플레이어는 발사 순간 0ms 선반영 완료)
+                    if (!IsOwner && surfaceType != SurfaceType.Flesh)
+                    {
+                        Transform hitTarget = null;
+                        if (Physics.Raycast(hitPoints[i] + hitNormals[i] * 0.05f, -hitNormals[i], out RaycastHit rHit, 0.15f, ~0, QueryTriggerInteraction.Ignore))
+                        {
+                            hitTarget = rHit.collider.transform;
+                        }
+                        DecalPoolManager.Instance.SpawnBulletHole(hitPoints[i], hitNormals[i], surfaceType, hitTarget);
+                    }
                 }
             }
         }
@@ -1098,11 +1170,26 @@ public class PlayerGunCombat : NetworkBehaviour
     {
         if (_currentGunData != null && _currentGunData.BulletTracerPrefab != null)
         {
-            GameObject tracer = Instantiate(_currentGunData.BulletTracerPrefab, from, Quaternion.identity);
+            Vector3 startPos = from;
+            
+            if (_playerItemHolder != null && _playerItemHolder.CurrentHeldInstance != null)
+            {
+                var visual = _playerItemHolder.CurrentHeldInstance.GetComponent<HeldItemVisual>();
+                if (visual != null && visual.MuzzlePoint != null)
+                {
+                    startPos = visual.MuzzlePoint.position;
+                }
+            }
+            else if (_playerInteraction != null && _playerInteraction.HoldPoint != null)
+            {
+                startPos = _playerInteraction.HoldPoint.position + _playerInteraction.HoldPoint.forward * 0.4f;
+            }
+
+            GameObject tracer = Instantiate(_currentGunData.BulletTracerPrefab, startPos, Quaternion.identity);
             LineRenderer lr = tracer.GetComponent<LineRenderer>();
             if (lr != null)
             {
-                lr.SetPosition(0, from);
+                lr.SetPosition(0, startPos);
                 lr.SetPosition(1, to);
             }
             Destroy(tracer, 0.15f);
