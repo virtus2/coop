@@ -1,10 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 인벤토리 시스템(ItemData 에셋, 절차적 아이콘 스프라이트, UI 프리팹, PlayerPrefab 컴포넌트 및 GameScene UI)을
@@ -219,13 +220,13 @@ public static class SetupInventorySystem
         keyRect.anchorMax = new Vector2(0.45f, 1f);
         keyRect.offsetMin = new Vector2(4f, 0f);
         keyRect.offsetMax = Vector2.zero;
-        var keyText = keyTextGO.AddComponent<Text>();
-        keyText.font = font;
+        var keyText = keyTextGO.AddComponent<TextMeshProUGUI>();
+        // keyText.font = font; /* TMP Font */
         keyText.text = "1";
         keyText.fontSize = 14;
-        keyText.fontStyle = FontStyle.Bold;
+        keyText.fontStyle = FontStyles.Bold;
         keyText.color = new Color(0.9f, 0.9f, 0.9f, 0.9f);
-        keyText.alignment = TextAnchor.UpperLeft;
+        keyText.alignment = TextAlignmentOptions.TopLeft;
         keyText.raycastTarget = false;
 
         // 5. Quantity Text (우하단 수량)
@@ -236,13 +237,13 @@ public static class SetupInventorySystem
         qtyRect.anchorMax = new Vector2(1f, 0.45f);
         qtyRect.offsetMin = Vector2.zero;
         qtyRect.offsetMax = new Vector2(-4f, 0f);
-        var qtyText = qtyTextGO.AddComponent<Text>();
-        qtyText.font = font;
+        var qtyText = qtyTextGO.AddComponent<TextMeshProUGUI>();
+        // qtyText.font = font; /* TMP Font */
         qtyText.text = "99";
         qtyText.fontSize = 14;
-        qtyText.fontStyle = FontStyle.Bold;
+        qtyText.fontStyle = FontStyles.Bold;
         qtyText.color = Color.white;
-        qtyText.alignment = TextAnchor.LowerRight;
+        qtyText.alignment = TextAlignmentOptions.BottomRight;
         qtyText.raycastTarget = false;
         qtyTextGO.SetActive(false);
 
@@ -334,13 +335,13 @@ public static class SetupInventorySystem
         titleRect.anchorMax = new Vector2(0.85f, 0.98f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
-        var titleText = titleGO.AddComponent<Text>();
-        titleText.font = font;
+        var titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        // titleText.font = font; /* TMP Font */
         titleText.text = "INVENTORY";
         titleText.fontSize = 26;
-        titleText.fontStyle = FontStyle.Bold;
+        titleText.fontStyle = FontStyles.Bold;
         titleText.color = Color.white;
-        titleText.alignment = TextAnchor.MiddleLeft;
+        titleText.alignment = TextAlignmentOptions.Left;
 
         // Instructions Hint Text
         var hintGO = new GameObject("HintText");
@@ -350,12 +351,12 @@ public static class SetupInventorySystem
         hintRect.anchorMax = new Vector2(0.85f, 0.98f);
         hintRect.offsetMin = Vector2.zero;
         hintRect.offsetMax = Vector2.zero;
-        var hintText = hintGO.AddComponent<Text>();
-        hintText.font = font;
+        var hintText = hintGO.AddComponent<TextMeshProUGUI>();
+        // hintText.font = font; /* TMP Font */
         hintText.text = "[Tab / ESC] 닫기 | 마우스 클릭/드래그로 아이템 이동";
         hintText.fontSize = 14;
         hintText.color = new Color(0.7f, 0.8f, 0.9f, 0.8f);
-        hintText.alignment = TextAnchor.MiddleRight;
+        hintText.alignment = TextAlignmentOptions.Right;
 
         // Close Button (X)
         var closeBtnGO = new GameObject("CloseButton");
@@ -376,13 +377,13 @@ public static class SetupInventorySystem
         closeTxtRect.anchorMax = Vector2.one;
         closeTxtRect.offsetMin = Vector2.zero;
         closeTxtRect.offsetMax = Vector2.zero;
-        var closeTxt = closeTxtGO.AddComponent<Text>();
-        closeTxt.font = font;
+        var closeTxt = closeTxtGO.AddComponent<TextMeshProUGUI>();
+        // closeTxt.font = font; /* TMP Font */
         closeTxt.text = "X";
         closeTxt.fontSize = 18;
-        closeTxt.fontStyle = FontStyle.Bold;
+        closeTxt.fontStyle = FontStyles.Bold;
         closeTxt.color = Color.white;
-        closeTxt.alignment = TextAnchor.MiddleCenter;
+        closeTxt.alignment = TextAlignmentOptions.Center;
 
         // ----------------------------------------------------
         // 2-1. Grid Area (5x4)
@@ -394,13 +395,13 @@ public static class SetupInventorySystem
         gridLabelRect.anchorMax = new Vector2(0.95f, 0.89f);
         gridLabelRect.offsetMin = Vector2.zero;
         gridLabelRect.offsetMax = Vector2.zero;
-        var gridLabelText = gridLabelGO.AddComponent<Text>();
-        gridLabelText.font = font;
+        var gridLabelText = gridLabelGO.AddComponent<TextMeshProUGUI>();
+        // gridLabelText.font = font; /* TMP Font */
         gridLabelText.text = "소지품 (그리드 인벤토리)";
         gridLabelText.fontSize = 16;
-        gridLabelText.fontStyle = FontStyle.Bold;
+        gridLabelText.fontStyle = FontStyles.Bold;
         gridLabelText.color = new Color(0.85f, 0.85f, 0.9f, 1f);
-        gridLabelText.alignment = TextAnchor.MiddleLeft;
+        gridLabelText.alignment = TextAlignmentOptions.Left;
 
         var gridContainerGO = new GameObject("GridContainer");
         gridContainerGO.transform.SetParent(windowGO.transform, false);
@@ -438,13 +439,13 @@ public static class SetupInventorySystem
         winTbLabelRect.anchorMax = new Vector2(0.95f, 0.24f);
         winTbLabelRect.offsetMin = Vector2.zero;
         winTbLabelRect.offsetMax = Vector2.zero;
-        var winTbLabelText = winTbLabelGO.AddComponent<Text>();
-        winTbLabelText.font = font;
+        var winTbLabelText = winTbLabelGO.AddComponent<TextMeshProUGUI>();
+        // winTbLabelText.font = font; /* TMP Font */
         winTbLabelText.text = "단축키 툴바 (1~0 키 연동)";
         winTbLabelText.fontSize = 16;
-        winTbLabelText.fontStyle = FontStyle.Bold;
+        winTbLabelText.fontStyle = FontStyles.Bold;
         winTbLabelText.color = new Color(0.85f, 0.85f, 0.9f, 1f);
-        winTbLabelText.alignment = TextAnchor.MiddleLeft;
+        winTbLabelText.alignment = TextAlignmentOptions.Left;
 
         var winTbContainerGO = new GameObject("WindowToolbarContainer");
         winTbContainerGO.transform.SetParent(windowGO.transform, false);
@@ -585,3 +586,4 @@ public static class SetupInventorySystem
         }
     }
 }
+

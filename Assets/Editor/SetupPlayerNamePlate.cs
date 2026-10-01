@@ -1,6 +1,7 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// PlayerPrefab에 World Space uGUI 이름표(NamePlate)와 PlayerNamePlate 컴포넌트를 구성하는 에디터 유틸리티입니다.
@@ -82,15 +83,15 @@ public static class SetupPlayerNamePlate
             textRect.sizeDelta = new Vector2(250f, 60f);
             textRect.anchoredPosition = Vector2.zero;
 
-            var nameText = textGO.GetComponent<Text>();
+            var nameText = textGO.GetComponent<TMP_Text>();
             if (nameText == null)
             {
-                nameText = textGO.AddComponent<Text>();
+                nameText = textGO.AddComponent<TextMeshProUGUI>();
             }
-            nameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            // // nameText.font = null; /* TMP Font */ /* TMP font */
             nameText.fontSize = 24;
-            nameText.fontStyle = FontStyle.Bold;
-            nameText.alignment = TextAnchor.MiddleCenter;
+            nameText.fontStyle = FontStyles.Bold;
+            nameText.alignment = TextAlignmentOptions.Center;
             nameText.color = Color.white;
             nameText.text = "Player";
 
@@ -121,3 +122,4 @@ public static class SetupPlayerNamePlate
         }
     }
 }
+

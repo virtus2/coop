@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using System.IO;
@@ -43,13 +44,13 @@ public class CreateInGameMenuUI
         // 3. Title Text
         var titleGO = new GameObject("TitleText");
         titleGO.transform.SetParent(panelGO.transform, false);
-        var titleText = titleGO.AddComponent<Text>();
-        titleText.font = font;
+        var titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        // titleText.font = font; /* TMP Font */
         titleText.text = "OPTIONS";
         titleText.fontSize = 28;
-        titleText.fontStyle = FontStyle.Bold;
+        titleText.fontStyle = FontStyles.Bold;
         titleText.color = Color.white;
-        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.alignment = TextAlignmentOptions.Center;
 
         var titleRect = titleGO.GetComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0.05f, 0.78f);
@@ -69,13 +70,13 @@ public class CreateInGameMenuUI
         // 4-1. Label Text
         var sensLabelGO = new GameObject("SensitivityLabel");
         sensLabelGO.transform.SetParent(sensContainerGO.transform, false);
-        var sensLabelText = sensLabelGO.AddComponent<Text>();
-        sensLabelText.font = font;
+        var sensLabelText = sensLabelGO.AddComponent<TextMeshProUGUI>();
+        // sensLabelText.font = font; /* TMP Font */
         sensLabelText.text = "마우스 감도";
         sensLabelText.fontSize = 20;
-        sensLabelText.fontStyle = FontStyle.Bold;
+        sensLabelText.fontStyle = FontStyles.Bold;
         sensLabelText.color = Color.white;
-        sensLabelText.alignment = TextAnchor.MiddleLeft;
+        sensLabelText.alignment = TextAlignmentOptions.Left;
 
         var sensLabelRect = sensLabelGO.GetComponent<RectTransform>();
         sensLabelRect.anchorMin = new Vector2(0f, 0.55f);
@@ -86,13 +87,13 @@ public class CreateInGameMenuUI
         // 4-2. Value Text
         var sensValueGO = new GameObject("SensitivityValueText");
         sensValueGO.transform.SetParent(sensContainerGO.transform, false);
-        var sensValueText = sensValueGO.AddComponent<Text>();
-        sensValueText.font = font;
+        var sensValueText = sensValueGO.AddComponent<TextMeshProUGUI>();
+        // sensValueText.font = font; /* TMP Font */
         sensValueText.text = $"{SettingsManager.DEFAULT_MOUSE_SENSITIVITY:0.00}";
         sensValueText.fontSize = 20;
-        sensValueText.fontStyle = FontStyle.Bold;
+        sensValueText.fontStyle = FontStyles.Bold;
         sensValueText.color = new Color(0.4f, 0.8f, 1f, 1f);
-        sensValueText.alignment = TextAnchor.MiddleRight;
+        sensValueText.alignment = TextAlignmentOptions.Right;
 
         var sensValueRect = sensValueGO.GetComponent<RectTransform>();
         sensValueRect.anchorMin = new Vector2(0.7f, 0.55f);
@@ -182,13 +183,13 @@ public class CreateInGameMenuUI
 
         var closeTxtGO = new GameObject("Text");
         closeTxtGO.transform.SetParent(closeBtnGO.transform, false);
-        var closeTxt = closeTxtGO.AddComponent<Text>();
-        closeTxt.font = font;
+        var closeTxt = closeTxtGO.AddComponent<TextMeshProUGUI>();
+        // closeTxt.font = font; /* TMP Font */
         closeTxt.text = "닫기";
         closeTxt.fontSize = 22;
-        closeTxt.fontStyle = FontStyle.Bold;
+        closeTxt.fontStyle = FontStyles.Bold;
         closeTxt.color = Color.white;
-        closeTxt.alignment = TextAnchor.MiddleCenter;
+        closeTxt.alignment = TextAlignmentOptions.Center;
 
         var ctrRect = closeTxtGO.GetComponent<RectTransform>();
         ctrRect.anchorMin = Vector2.zero;
@@ -272,13 +273,13 @@ public class CreateInGameMenuUI
         // 3. Title Text
         var titleGO = new GameObject("TitleText");
         titleGO.transform.SetParent(panelGO.transform, false);
-        var titleText = titleGO.AddComponent<Text>();
-        titleText.font = font;
+        var titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        // titleText.font = font; /* TMP Font */
         titleText.text = "PAUSE MENU";
         titleText.fontSize = 32;
-        titleText.fontStyle = FontStyle.Bold;
+        titleText.fontStyle = FontStyles.Bold;
         titleText.color = Color.white;
-        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.alignment = TextAlignmentOptions.Center;
 
         var titleRect = titleGO.GetComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0.05f, 0.80f);
@@ -301,13 +302,13 @@ public class CreateInGameMenuUI
 
         var resumeTxtGO = new GameObject("Text");
         resumeTxtGO.transform.SetParent(resumeBtnGO.transform, false);
-        var resumeTxt = resumeTxtGO.AddComponent<Text>();
-        resumeTxt.font = font;
+        var resumeTxt = resumeTxtGO.AddComponent<TextMeshProUGUI>();
+        // resumeTxt.font = font; /* TMP Font */
         resumeTxt.text = "계속하기";
         resumeTxt.fontSize = 24;
-        resumeTxt.fontStyle = FontStyle.Bold;
+        resumeTxt.fontStyle = FontStyles.Bold;
         resumeTxt.color = Color.white;
-        resumeTxt.alignment = TextAnchor.MiddleCenter;
+        resumeTxt.alignment = TextAlignmentOptions.Center;
 
         var rtrRect = resumeTxtGO.GetComponent<RectTransform>();
         rtrRect.anchorMin = Vector2.zero;
@@ -330,13 +331,13 @@ public class CreateInGameMenuUI
 
         var optionTxtGO = new GameObject("Text");
         optionTxtGO.transform.SetParent(optionBtnGO.transform, false);
-        var optionTxt = optionTxtGO.AddComponent<Text>();
-        optionTxt.font = font;
+        var optionTxt = optionTxtGO.AddComponent<TextMeshProUGUI>();
+        // optionTxt.font = font; /* TMP Font */
         optionTxt.text = "옵션";
         optionTxt.fontSize = 24;
-        optionTxt.fontStyle = FontStyle.Bold;
+        optionTxt.fontStyle = FontStyles.Bold;
         optionTxt.color = Color.white;
-        optionTxt.alignment = TextAnchor.MiddleCenter;
+        optionTxt.alignment = TextAlignmentOptions.Center;
 
         var otrRect = optionTxtGO.GetComponent<RectTransform>();
         otrRect.anchorMin = Vector2.zero;
@@ -359,13 +360,13 @@ public class CreateInGameMenuUI
 
         var exitTxtGO = new GameObject("Text");
         exitTxtGO.transform.SetParent(exitBtnGO.transform, false);
-        var exitTxt = exitTxtGO.AddComponent<Text>();
-        exitTxt.font = font;
+        var exitTxt = exitTxtGO.AddComponent<TextMeshProUGUI>();
+        // exitTxt.font = font; /* TMP Font */
         exitTxt.text = "종료하기";
         exitTxt.fontSize = 24;
-        exitTxt.fontStyle = FontStyle.Bold;
+        exitTxt.fontStyle = FontStyles.Bold;
         exitTxt.color = Color.white;
-        exitTxt.alignment = TextAnchor.MiddleCenter;
+        exitTxt.alignment = TextAlignmentOptions.Center;
 
         var etrRect = exitTxtGO.GetComponent<RectTransform>();
         etrRect.anchorMin = Vector2.zero;
@@ -376,12 +377,12 @@ public class CreateInGameMenuUI
         // 7. Status Text (저장 중 및 종료 안내)
         var statusGO = new GameObject("StatusText");
         statusGO.transform.SetParent(panelGO.transform, false);
-        var statusText = statusGO.AddComponent<Text>();
-        statusText.font = font;
+        var statusText = statusGO.AddComponent<TextMeshProUGUI>();
+        // statusText.font = font; /* TMP Font */
         statusText.text = "";
         statusText.fontSize = 18;
         statusText.color = new Color(1f, 0.85f, 0.3f, 1f);
-        statusText.alignment = TextAnchor.MiddleCenter;
+        statusText.alignment = TextAlignmentOptions.Center;
         statusGO.SetActive(false);
 
         var stRect = statusGO.GetComponent<RectTransform>();
@@ -414,3 +415,4 @@ public class CreateInGameMenuUI
         Debug.Log("[CreateInGameMenuUI] GameScene에 인게임 메뉴 UI 및 모듈형 옵션창 UI를 성공적으로 생성했습니다.");
     }
 }
+

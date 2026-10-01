@@ -1,9 +1,10 @@
-using System.IO;
+﻿using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 using Unity.Netcode;
 
 public class SetupInteractionSystem
@@ -247,12 +248,12 @@ public class SetupInteractionSystem
 
         var keyTextGO = new GameObject("KeyText");
         keyTextGO.transform.SetParent(keyBoxGO.transform, false);
-        var keyText = keyTextGO.AddComponent<Text>();
-        keyText.font = font;
+        var keyText = keyTextGO.AddComponent<TextMeshProUGUI>();
+        // keyText.font = font; /* TMP Font */
         keyText.text = "E";
         keyText.fontSize = 20;
-        keyText.fontStyle = FontStyle.Bold;
-        keyText.alignment = TextAnchor.MiddleCenter;
+        keyText.fontStyle = FontStyles.Bold;
+        keyText.alignment = TextAlignmentOptions.Center;
         keyText.color = Color.white;
         var keyTextRect = keyTextGO.GetComponent<RectTransform>();
         keyTextRect.anchorMin = Vector2.zero;
@@ -263,12 +264,12 @@ public class SetupInteractionSystem
         // Action Text
         var actionTextGO = new GameObject("ActionText");
         actionTextGO.transform.SetParent(promptGO.transform, false);
-        var actionText = actionTextGO.AddComponent<Text>();
-        actionText.font = font;
+        var actionText = actionTextGO.AddComponent<TextMeshProUGUI>();
+        // actionText.font = font; /* TMP Font */
         actionText.text = "상호작용";
         actionText.fontSize = 18;
-        actionText.fontStyle = FontStyle.Normal;
-        actionText.alignment = TextAnchor.MiddleLeft;
+        actionText.fontStyle = FontStyles.Normal;
+        actionText.alignment = TextAlignmentOptions.Left;
         actionText.color = Color.white;
         var actionTextRect = actionTextGO.GetComponent<RectTransform>();
         actionTextRect.anchorMin = new Vector2(0.34f, 0f);
@@ -290,12 +291,12 @@ public class SetupInteractionSystem
 
         var heldTextGO = new GameObject("HeldText");
         heldTextGO.transform.SetParent(heldGO.transform, false);
-        var heldText = heldTextGO.AddComponent<Text>();
-        heldText.font = font;
+        var heldText = heldTextGO.AddComponent<TextMeshProUGUI>();
+        // heldText.font = font; /* TMP Font */
         heldText.text = "[좌클릭] 바닥에 내려놓기";
         heldText.fontSize = 16;
-        heldText.fontStyle = FontStyle.Normal;
-        heldText.alignment = TextAnchor.MiddleCenter;
+        heldText.fontStyle = FontStyles.Normal;
+        heldText.alignment = TextAlignmentOptions.Center;
         heldText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
         var heldTextRect = heldTextGO.GetComponent<RectTransform>();
         heldTextRect.anchorMin = Vector2.zero;
@@ -359,3 +360,4 @@ public class SetupInteractionSystem
         Debug.Log("[SetupInteractionSystem] GameScene에 InteractionHUD, GameSceneBootstrap 및 테스트용 SamplePickableBox 배치 완료.");
     }
 }
+

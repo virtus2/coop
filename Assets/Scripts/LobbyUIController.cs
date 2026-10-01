@@ -1,5 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+#if !UNITY_SERVER || UNITY_EDITOR
+using Steamworks;
+#endif
 
 /// <summary>
 /// LobbyCanvas에 붙는 순수 UI 컨트롤러 (NetworkBehaviour 아님)
@@ -8,10 +12,11 @@ using UnityEngine.UI;
 public class LobbyUIController : MonoBehaviour
 {
     [SerializeField] private GameObject _lobbyPanel;
-    [SerializeField] private Text[] _playerNameTexts;
-    [SerializeField] private Text[] _playerReadyTexts;
+    [SerializeField] private TMP_Text[] _playerNameTexts;
+    [SerializeField] private TMP_Text[] _playerReadyTexts;
     [SerializeField] private Button _readyButton;
     [SerializeField] private Button _startButton;
+    [SerializeField] private TMP_Text _saveInfoText;
 
     private LobbyNetworkSync _sync;
 
@@ -118,6 +123,30 @@ public class LobbyUIController : MonoBehaviour
             }
         }
 
+        if (_saveInfoText != null)
+        {
+#if !UNITY_SERVER || UNITY_EDITOR
+            if (SteamManager.Initialized && SteamLobbyManager.Instance != null && SteamLobbyManager.Instance.CurrentLobbyID.IsValid())
+            {
+                string day = SteamMatchmaking.GetLobbyData(SteamLobbyManager.Instance.CurrentLobbyID, "SaveDay");
+                if (!string.IsNullOrEmpty(day))
+                {
+                    _saveInfoText.text = $"Day: {day}";
+                }
+                else 
+                {
+                    _saveInfoText.text = "Day: 1 (New Game)";
+                }
+            }
+            else
+            {
+                _saveInfoText.text = "";
+            }
+#else
+            _saveInfoText.text = "";
+#endif
+        }
+
         _startButton.gameObject.SetActive(isServer);
         _startButton.interactable = _sync.AllReady && _sync.PlayerCount > 0;
     }
@@ -138,3 +167,4 @@ public class LobbyUIController : MonoBehaviour
         }
     }
 }
+

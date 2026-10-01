@@ -1,5 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 설치된 블록을 조준하고 F키를 길게 누를 때 화면 중앙에 철거 진행도(게이지)와 안내 문구를 표시하는 UI 컴포넌트입니다.
@@ -12,8 +13,8 @@ public class DismantleProgressUI : MonoBehaviour
     [SerializeField] private GameObject _panelRoot;
     [SerializeField] private Slider _progressSlider;
     [SerializeField] private Image _fillImage;
-    [SerializeField] private Text _targetNameText;
-    [SerializeField] private Text _hintText;
+    [SerializeField] private TMP_Text _targetNameText;
+    [SerializeField] private TMP_Text _hintText;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatic()
@@ -114,10 +115,10 @@ public class DismantleProgressUI : MonoBehaviour
         nameRect.anchorMin = new Vector2(0.05f, 0.55f);
         nameRect.anchorMax = new Vector2(0.95f, 0.9f);
         nameRect.sizeDelta = Vector2.zero;
-        _targetNameText = nameTextGO.GetComponent<Text>();
-        _targetNameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+        _targetNameText = nameTextGO.GetComponent<TMP_Text>();
+        // // _targetNameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf"); /* TMP Font */ /* TMP Font */
         _targetNameText.fontSize = 15;
-        _targetNameText.alignment = TextAnchor.MiddleCenter;
+        _targetNameText.alignment = TextAlignmentOptions.Center;
         _targetNameText.color = Color.white;
 
         // Hint Text
@@ -127,10 +128,10 @@ public class DismantleProgressUI : MonoBehaviour
         hintRect.anchorMin = new Vector2(0.05f, 0f);
         hintRect.anchorMax = new Vector2(0.95f, 0.2f);
         hintRect.sizeDelta = Vector2.zero;
-        _hintText = hintTextGO.GetComponent<Text>();
-        _hintText.font = _targetNameText.font;
+        _hintText = hintTextGO.GetComponent<TMP_Text>();
+        // // _hintText.font = _targetNameText.font; /* TMP Font */ /* TMP Font */
         _hintText.fontSize = 11;
-        _hintText.alignment = TextAnchor.MiddleCenter;
+        _hintText.alignment = TextAlignmentOptions.Center;
         _hintText.color = new Color(0.8f, 0.8f, 0.8f, 0.8f);
         _hintText.text = "[F] 키 유지하여 철거";
     }

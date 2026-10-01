@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 인벤토리 또는 툴바의 개별 슬롯 UI를 표현하고,
@@ -11,8 +12,8 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IBeginDragHa
     [Header("UI References")]
     [SerializeField] private Image _backgroundImage;
     [SerializeField] private Image _iconImage;
-    [SerializeField] private Text _quantityText;
-    [SerializeField] private Text _keyNumberText;
+    [SerializeField] private TMP_Text _quantityText;
+    [SerializeField] private TMP_Text _keyNumberText;
     [SerializeField] private Image _highlightOutline;
 
     [Header("Slot Identity")]

@@ -12,6 +12,7 @@ When working on this project, please adhere to the following rules and guideline
 - `docs/art-style-reference.md`: 프로젝트 아트 스타일, 레퍼런스 게임 분석 및 시각적 가이드라인.
 
 ## Project Settings
+- **UI Text:** Always use `TextMeshPro` (`TMP_Text`, `TextMeshProUGUI`) instead of the legacy Unity `Text` component.
 - **Input System:** Always use the new Unity `InputSystem`. Do not use the legacy `Input` manager.
 - **Render Pipeline:** This project uses the Universal Render Pipeline (**URP**). Ensure all materials, shaders, and rendering features are compatible with URP.
 - **Enter Play Mode Settings (Domain Reload):** This project disables **Domain Reload** to speed up Play Mode iteration. You MUST ensure that all `static` variables, events, and singletons are properly reset. Use `[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]` to reset static state, or handle cleanup manually in `OnDestroy()` / `OnDisable()`.

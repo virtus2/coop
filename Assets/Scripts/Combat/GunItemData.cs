@@ -25,6 +25,8 @@ public class GunItemData : ItemData
     [SerializeField] private float _maxRange = 100f;
     [Tooltip("발사 모드 (단발, 연사, 차지샷)")]
     [SerializeField] private GunFireMode _fireMode = GunFireMode.FullAuto;
+    [Tooltip("타격 시 적을 밀쳐내는 넉백 힘 (0이면 넉백 없음)")]
+    [SerializeField] private float _knockbackForce = 1.0f;
 
     [Header("Shotgun Settings (산탄총 전용)")]
     [Tooltip("산탄총(다중 펠릿 히트스캔 및 거리별 감쇄) 활성화 여부")]
@@ -102,6 +104,7 @@ public class GunItemData : ItemData
     public float FireInterval => Mathf.Max(0.02f, _fireInterval);
     public float MaxRange => _maxRange;
     public GunFireMode FireMode => _fireMode;
+    public float KnockbackForce => _knockbackForce;
 
     public bool IsShotgun => _isShotgun;
     public int PelletCount => Mathf.Max(1, _pelletCount);

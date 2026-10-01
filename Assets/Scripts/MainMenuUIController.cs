@@ -19,6 +19,7 @@ public class MainMenuUIController : MonoBehaviour
 
     [Header("Option Window UI")]
     [SerializeField] private OptionWindowUI _optionWindow;
+    [SerializeField] private SaveSelectionUIController _saveSelectionUI;
 
     private void Awake()
     {
@@ -108,28 +109,46 @@ public class MainMenuUIController : MonoBehaviour
         }
     }
 
+    private NetworkBootstrap GetNetworkBootstrap()
+    {
+        if (_networkBootstrap == null)
+        {
+            _networkBootstrap = FindFirstObjectByType<NetworkBootstrap>();
+        }
+        return _networkBootstrap;
+    }
+
     private void OnHostLobbyClicked()
     {
-        if (_networkBootstrap != null)
+        var bootstrap = GetNetworkBootstrap();
+        if (bootstrap != null)
         {
-            _networkBootstrap.HostLobby();
+            if (_saveSelectionUI != null)
+            {
+                _saveSelectionUI.Open(() => bootstrap.HostLobby());
+            }
+            else
+            {
+                bootstrap.HostLobby();
+            }
         }
         else
         {
-            Debug.LogError("[MainMenuUIController] NetworkBootstrap is not referenced.");
+            Debug.LogError("[MainMenuUIController] NetworkBootstrap is not referenced or could not be found.");
         }
     }
 
     private void OnJoinLobbyClicked()
     {
-        if (_networkBootstrap == null)
+        var bootstrap = GetNetworkBootstrap();
+        if (bootstrap == null)
         {
-            Debug.LogError("[MainMenuUIController] NetworkBootstrap is not referenced.");
+            Debug.LogError("[MainMenuUIController] NetworkBootstrap is not referenced or could not be found.");
             return;
         }
 
         string lobbyId = _lobbyIdInputField != null ? _lobbyIdInputField.text : string.Empty;
-        _networkBootstrap.JoinLobby(lobbyId);
+        bootstrap.JoinLobby(lobbyId);
     }
 
     private void OnOptionClicked()

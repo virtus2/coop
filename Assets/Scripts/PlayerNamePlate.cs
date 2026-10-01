@@ -1,7 +1,8 @@
-using Unity.Collections;
+﻿using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 플레이어 캐릭터 머리 위에 uGUI World Space Canvas로 닉네임을 표시하고,
@@ -11,7 +12,7 @@ public class PlayerNamePlate : NetworkBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Canvas _canvas;
-    [SerializeField] private Text _nameText;
+    [SerializeField] private TMP_Text _nameText;
 
     [Header("Display Settings")]
     [SerializeField] private Vector3 _offset = new Vector3(0f, 2.2f, 0f);
@@ -41,7 +42,7 @@ public class PlayerNamePlate : NetworkBehaviour
 
         if (_nameText == null && _canvas != null)
         {
-            _nameText = _canvas.GetComponentInChildren<Text>(true);
+            _nameText = _canvas.GetComponentInChildren<TMP_Text>(true);
         }
 
         // 프리팹이나 씬에 Canvas/Text가 없을 경우 안전하게 기본 World Space UI 자동 생성
@@ -200,11 +201,11 @@ public class PlayerNamePlate : NetworkBehaviour
         textRect.sizeDelta = new Vector2(250f, 60f);
         textRect.anchoredPosition = Vector2.zero;
 
-        _nameText = textGO.AddComponent<Text>();
-        _nameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        _nameText = textGO.AddComponent<TextMeshProUGUI>();
+        // // // _nameText.font = null; /* TMP Font */ /* TMP Font */ /* TMP font */
         _nameText.fontSize = 24;
-        _nameText.fontStyle = FontStyle.Bold;
-        _nameText.alignment = TextAnchor.MiddleCenter;
+        _nameText.fontStyle = FontStyles.Bold;
+        _nameText.alignment = TextAlignmentOptions.Center;
         _nameText.color = Color.white;
         _nameText.text = "Player";
 
@@ -214,3 +215,4 @@ public class PlayerNamePlate : NetworkBehaviour
         outline.effectDistance = new Vector2(1.5f, -1.5f);
     }
 }
+

@@ -1,15 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// 서버 권한(Server-Authoritative) 기반의 몬스터 AI 컨트롤러입니다.
-/// 모든 AI 의사결정(탐색, 순찰, 추적, 공격) 및 이동은 오직 서버(IsServer)에서만 실행되며,
-/// 클라이언트는 NetworkTransform 및 NetworkVariable을 통해 동기화된 결과를 렌더링합니다.
+/// ?�버 권한(Server-Authoritative) 기반??몬스??AI 컨트롤러?�니??
+/// 모든 AI ?�사결정(?�색, ?�찰, 추적, 공격) �??�동?� ?�직 ?�버(IsServer)?�서�??�행?�며,
+/// ?�라?�언?�는 NetworkTransform �?NetworkVariable???�해 ?�기?�된 결과�??�더링합?�다.
 ///
-/// 호스트 환경에서도 몬스터는 플레이어 소유가 아니며(HasPlayerOwner == false),
-/// 호스트의 플레이어 입력/시점 시스템과 완전히 격리되어 독립적으로 동작합니다.
+/// ?�스???�경?�서??몬스?�는 ?�레?�어 ?�유가 ?�니�?HasPlayerOwner == false),
+/// ?�스?�의 ?�레?�어 ?�력/?�점 ?�스?�과 ?�전??격리?�어 ?�립?�으�??�작?�니??
 /// </summary>
 public class MonsterController : NonPlayerCharacter
 {
@@ -66,8 +66,8 @@ public class MonsterController : NonPlayerCharacter
         }
         else
         {
-            // 클라이언트 측에서는 NavMeshAgent가 자체 물리/이동을 돌리지 않도록 비활성화
-            // (동기화는 오직 NetworkTransform이 담당)
+            // ?�라?�언??측에?�는 NavMeshAgent가 ?�체 물리/?�동???�리지 ?�도�?비활?�화
+            // (?�기?�는 ?�직 NetworkTransform???�당)
             if (_navMeshAgent != null)
             {
                 _navMeshAgent.enabled = false;
@@ -77,9 +77,9 @@ public class MonsterController : NonPlayerCharacter
 
     private void Update()
     {
-        // [중요] 오직 서버에서만 AI 로직과 이동을 제어합니다.
-        // 호스트 환경이라도 IsServer가 아닌 클라이언트 관점에서는 AI가 실행되지 않으며,
-        // 원격 클라이언트 역시 서버가 동기화해주는 Transform과 상태만 수신합니다.
+        // [중요] ?�직 ?�버?�서�?AI 로직�??�동???�어?�니??
+        // ?�스???�경?�라??IsServer가 ?�닌 ?�라?�언??관?�에?�는 AI가 ?�행?��? ?�으�?
+        // ?�격 ?�라?�언????�� ?�버가 ?�기?�해주는 Transform�??�태�??�신?�니??
         if (!IsServer || IsDead)
         {
             return;
@@ -108,10 +108,10 @@ public class MonsterController : NonPlayerCharacter
 
     private void UpdateStateMachine()
     {
-        // 1. 플레이어 감지 확인
+        // 1. ?�레?�어 감�? ?�인
         CheckForPlayers();
 
-        // 2. 현재 상태별 로직 실행
+        // 2. ?�재 ?�태�?로직 ?�행
         switch (CurrentState)
         {
             case CharacterState.Idle:
@@ -141,7 +141,7 @@ public class MonsterController : NonPlayerCharacter
         _idleTimer -= Time.deltaTime;
         if (_idleTimer <= 0f)
         {
-            // 순찰 목표 지점 무작위 생성 후 Patrol 상태로 전환
+            // ?�찰 목표 지??무작???�성 ??Patrol ?�태�??�환
             _patrolTarget = GetRandomPatrolPoint();
             _idleTimer = _idleDuration;
             SetState(CharacterState.Patrol);
@@ -171,15 +171,14 @@ public class MonsterController : NonPlayerCharacter
 
         float distanceToTarget = Vector3.Distance(transform.position, _currentTargetPlayer.position);
 
-        // 추적 범위 벗어남
-        if (distanceToTarget > _loseTargetRadius)
+        // 추적 범위 벗어??        if (distanceToTarget > _loseTargetRadius)
         {
             _currentTargetPlayer = null;
             SetState(CharacterState.Idle);
             return;
         }
 
-        // 공격 사거리 도달
+        // 공격 ?�거�??�달
         if (distanceToTarget <= _attackRange)
         {
             StopMovement();
@@ -187,7 +186,7 @@ public class MonsterController : NonPlayerCharacter
             return;
         }
 
-        // 타겟을 향해 이동
+        // ?�겟을 ?�해 ?�동
         SetMovementSpeed(_chaseSpeed);
         MoveTowards(_currentTargetPlayer.position);
     }
@@ -203,15 +202,15 @@ public class MonsterController : NonPlayerCharacter
         float distanceToTarget = Vector3.Distance(transform.position, _currentTargetPlayer.position);
         if (distanceToTarget > _attackRange * 1.3f)
         {
-            // 타겟이 공격 사거리 밖으로 도망침 -> 다시 추적
+            // ?�겟이 공격 ?�거�?밖으�??�망�?-> ?�시 추적
             SetState(CharacterState.Chase);
             return;
         }
 
-        // 타겟 방향으로 부드럽게 회전
+        // ?��?방향?�로 부?�럽�??�전
         RotateTowards(_currentTargetPlayer.position);
 
-        // 공격 실행
+        // 공격 ?�행
         if (_attackTimer <= 0f)
         {
             ExecuteAttack();
@@ -221,21 +220,29 @@ public class MonsterController : NonPlayerCharacter
 
     private void ExecuteAttack()
     {
-        // 클라이언트에 공격 애니메이션/이펙트 트리거
-        PlayAttackEffectClientRpc();
+        // ?�라?�언?�에 공격 ?�니메이???�펙???�리�?        PlayAttackEffectClientRpc();
 
-        // 타겟 플레이어에게 데미지 판정
+        // ?�겟에�??��?지 ?�정
         if (_currentTargetPlayer != null)
         {
-            Debug.Log($"[MonsterController] 몬스터 '{name}'가 플레이어 '{_currentTargetPlayer.name}'에게 {_attackDamage}의 공격을 가함!");
-            // 플레이어에 체력/피격 인터페이스 또는 컴포넌트가 있다면 여기서 적용 가능
+            var core = _currentTargetPlayer.GetComponent<ContainmentCore>();
+            if (core != null)
+            {
+                core.TakeDamage(_attackDamage);
+                Debug.Log($"[MonsterController] 몬스??'{name}'가 코어?�게 {_attackDamage} ?��?지�?가??");
+            }
+            else
+            {
+                Debug.Log($"[MonsterController] 몬스??'{name}'가 ?�레?�어 '{_currentTargetPlayer.name}'?�게 {_attackDamage}??공격??가??");
+                // ?�레?�어??체력/?�격 ?�터?�이???�는 컴포?�트가 ?�다�??�기???�용 가??            
+            }
         }
     }
 
     [ClientRpc]
     private void PlayAttackEffectClientRpc()
     {
-        // 클라이언트(호스트 포함)에서 공격 사운드, 이펙트, 애니메이션 재생
+        // ?�라?�언???�스???�함)?�서 공격 ?�운?? ?�펙?? ?�니메이???�생
     }
 
     #endregion
@@ -246,10 +253,10 @@ public class MonsterController : NonPlayerCharacter
     {
         if (_currentTargetPlayer != null)
         {
-            return; // 이미 타겟이 있으면 HandleChase/Attack에서 거리 판단
+            return; // ?��? ?�겟이 ?�으�?HandleChase/Attack?�서 거리 ?�단
         }
 
-        // 반경 내 플레이어 탐색
+        // 1. 반경 ???�레?�어 ?�색 (?�선?�위)
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, _detectionRadius, _detectionBuffer, _playerLayerMask, QueryTriggerInteraction.Ignore);
         float closestDistance = float.MaxValue;
         Transform closestPlayer = null;
@@ -272,6 +279,12 @@ public class MonsterController : NonPlayerCharacter
         if (closestPlayer != null)
         {
             _currentTargetPlayer = closestPlayer;
+            SetState(CharacterState.Chase);
+        }
+        // 2. 주�????��?가 ?�다�?코어�?최우???�겟으�?지??        
+        else if (ContainmentCore.Instance != null && ContainmentCore.Instance.CurrentHealth.Value > 0)
+        {
+            _currentTargetPlayer = ContainmentCore.Instance.transform;
             SetState(CharacterState.Chase);
         }
     }
@@ -301,7 +314,7 @@ public class MonsterController : NonPlayerCharacter
     {
         RotateTowards(destination);
 
-        // NavMeshAgent가 사용 가능한 경우 우선 활용
+        // NavMeshAgent가 ?�용 가?�한 경우 ?�선 ?�용
         if (_navMeshAgent != null && _navMeshAgent.enabled && _navMeshAgent.isOnNavMesh)
         {
             _navMeshAgent.isStopped = false;
@@ -309,7 +322,7 @@ public class MonsterController : NonPlayerCharacter
             return;
         }
 
-        // NavMesh가 없는 환경을 위한 Fallback 직접 이동 (CharacterController 또는 Transform)
+        // NavMesh가 ?�는 ?�경???�한 Fallback 직접 ?�동 (CharacterController ?�는 Transform)
         Vector3 direction = (destination - transform.position);
         direction.y = 0f;
 
@@ -328,6 +341,10 @@ public class MonsterController : NonPlayerCharacter
         }
     }
 
+    [Header("Knockback Settings")]
+    [Tooltip("?�백 ?�??��. 값이 ?�수�???밀?�나�? 1?� 기본, Mathf.Infinity???�백 면역?�니??")]
+    [SerializeField] private float _knockbackResistance = 1.0f;
+
     private Vector3 _knockbackVelocity;
 
     protected override void ApplyKnockback(Vector3 direction, float force)
@@ -335,10 +352,11 @@ public class MonsterController : NonPlayerCharacter
         if (!IsServer || IsDead) return;
 
         direction.y = 0f;
-        if (direction.sqrMagnitude > 0.001f)
+        if (direction.sqrMagnitude > 0.001f && _knockbackResistance > 0f && !float.IsInfinity(_knockbackResistance))
         {
             direction.Normalize();
-            _knockbackVelocity = direction * force;
+            float effectiveForce = force / _knockbackResistance;
+            _knockbackVelocity += direction * effectiveForce;
         }
     }
 
@@ -360,7 +378,7 @@ public class MonsterController : NonPlayerCharacter
             transform.position += moveDelta;
         }
 
-        // 지수 감쇠 (마찰력 적용)
+        // 지??감쇠 (마찰???�용)
         _knockbackVelocity = Vector3.Lerp(_knockbackVelocity, Vector3.zero, 12f * deltaTime);
     }
 
@@ -386,14 +404,33 @@ public class MonsterController : NonPlayerCharacter
 
     #endregion
 
-    protected override void HandleDeath()
+    protected override void HandleDeath(DamageInfo lastDamage)
     {
-        base.HandleDeath();
+        base.HandleDeath(lastDamage);
         StopMovement();
 
         if (_navMeshAgent != null)
         {
             _navMeshAgent.enabled = false;
+        }
+
+        if (_characterController != null)
+        {
+            _characterController.enabled = false;
+        }
+    }
+
+    protected override void OnClientDied(Vector3 knockbackDir, float knockbackForce, Vector3 hitPoint)
+    {
+        base.OnClientDied(knockbackDir, knockbackForce, hitPoint);
+        
+        var ragdoll = GetComponent<RagdollController>();
+        if (ragdoll != null)
+        {
+            float force = knockbackForce * 2f; // ��Ÿ �˹��� �� �� ����
+            if (force < 10f) force = 10f; // �ּ� ���ư��� �� ����
+            
+            ragdoll.ApplyForceToRagdoll(knockbackDir * force, hitPoint);
         }
     }
 

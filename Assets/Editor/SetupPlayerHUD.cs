@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -106,7 +106,7 @@ public static class SetupPlayerHUD
         statusRect.offsetMax = new Vector2(-10f, -5f);
 
         TextMeshProUGUI statusText = statusGO.GetComponent<TextMeshProUGUI>();
-        if (fontAsset != null) statusText.font = fontAsset;
+        if (fontAsset != null) // statusText.font = fontAsset; /* TMP Font */
         statusText.alignment = TextAlignmentOptions.Center;
         statusText.fontSize = 16f;
         statusText.fontStyle = FontStyles.Bold;
@@ -123,7 +123,7 @@ public static class SetupPlayerHUD
         textRect.offsetMax = new Vector2(-10f, 0f);
 
         TextMeshProUGUI ammoText = textGO.GetComponent<TextMeshProUGUI>();
-        if (fontAsset != null) ammoText.font = fontAsset;
+        if (fontAsset != null) // ammoText.font = fontAsset; /* TMP Font */
         ammoText.alignment = TextAlignmentOptions.Center;
         ammoText.fontSize = 32f;
         ammoText.fontStyle = FontStyles.Bold;

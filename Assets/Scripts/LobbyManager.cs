@@ -1,12 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.UI;
+using TMPro;
 using Steamworks;
 
 public class LobbyManager : NetworkBehaviour
 {
-    [SerializeField] private Text[] _playerNameTexts;
-    [SerializeField] private Text[] _playerReadyTexts;
+    [SerializeField] private TMP_Text[] _playerNameTexts;
+    [SerializeField] private TMP_Text[] _playerReadyTexts;
     [SerializeField] private Button _readyButton;
     [SerializeField] private Button _inviteButton;
     [SerializeField] private Button _startGameButton;
@@ -14,7 +15,7 @@ public class LobbyManager : NetworkBehaviour
 
     [Header("Lobby ID UI")]
     [SerializeField] private GameObject _lobbyIdContainer;
-    [SerializeField] private Text _lobbyIdText;
+    [SerializeField] private TMP_Text _lobbyIdText;
     [SerializeField] private Button _showIdButton;
     [SerializeField] private Button _copyIdButton;
 
@@ -283,7 +284,7 @@ public class LobbyManager : NetworkBehaviour
     {
         if (_inviteButton != null)
         {
-            var btnText = _inviteButton.GetComponentInChildren<Text>();
+            var btnText = _inviteButton.GetComponentInChildren<TMP_Text>();
             if (btnText != null)
             {
                 string original = btnText.text;
@@ -314,7 +315,7 @@ public class LobbyManager : NetworkBehaviour
         {
             _showIdButton.onClick.RemoveAllListeners();
             _showIdButton.onClick.AddListener(OnShowIdClicked);
-            var txt = _showIdButton.GetComponentInChildren<Text>();
+            var txt = _showIdButton.GetComponentInChildren<TMP_Text>();
             if (txt != null) txt.text = "Show";
         }
 
@@ -322,7 +323,7 @@ public class LobbyManager : NetworkBehaviour
         {
             _copyIdButton.onClick.RemoveAllListeners();
             _copyIdButton.onClick.AddListener(OnCopyIdClicked);
-            var txt = _copyIdButton.GetComponentInChildren<Text>();
+            var txt = _copyIdButton.GetComponentInChildren<TMP_Text>();
             if (txt != null) txt.text = "Copy";
         }
     }
@@ -348,7 +349,7 @@ public class LobbyManager : NetworkBehaviour
             }
             if (_showIdButton != null)
             {
-                var txt = _showIdButton.GetComponentInChildren<Text>();
+                var txt = _showIdButton.GetComponentInChildren<TMP_Text>();
                 if (txt != null) txt.text = "Show";
             }
         }
@@ -371,7 +372,7 @@ public class LobbyManager : NetworkBehaviour
     {
         if (_showIdButton != null)
         {
-            var txt = _showIdButton.GetComponentInChildren<Text>();
+            var txt = _showIdButton.GetComponentInChildren<TMP_Text>();
             if (txt != null) txt.text = "Hide";
         }
 
@@ -384,7 +385,7 @@ public class LobbyManager : NetworkBehaviour
         }
         if (_showIdButton != null)
         {
-            var txt = _showIdButton.GetComponentInChildren<Text>();
+            var txt = _showIdButton.GetComponentInChildren<TMP_Text>();
             if (txt != null) txt.text = "Show";
         }
         _hideIdCoroutine = null;
@@ -408,7 +409,7 @@ public class LobbyManager : NetworkBehaviour
     {
         if (_copyIdButton != null)
         {
-            var txt = _copyIdButton.GetComponentInChildren<Text>();
+            var txt = _copyIdButton.GetComponentInChildren<TMP_Text>();
             if (txt != null)
             {
                 string orig = txt.text;
@@ -467,3 +468,4 @@ public class LobbyManager : NetworkBehaviour
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -218,9 +218,9 @@ public class NPCController : NonPlayerCharacter, IInteractable
 
     #endregion
 
-    protected override void HandleDeath()
+    protected override void HandleDeath(DamageInfo lastDamage)
     {
-        base.HandleDeath();
+        base.HandleDeath(lastDamage);
         _currentInteractingPlayer = null;
 
         if (_navMeshAgent != null && _navMeshAgent.enabled && _navMeshAgent.isOnNavMesh)

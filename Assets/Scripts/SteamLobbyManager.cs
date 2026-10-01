@@ -183,6 +183,16 @@ public class SteamLobbyManager : MonoBehaviour
         SteamMatchmaking.SetLobbyData(CurrentLobbyID, HostAddressKey, SteamUser.GetSteamID().ToString());
         SteamMatchmaking.SetLobbyData(CurrentLobbyID, "name", SteamFriends.GetPersonaName() + "'s Lobby");
 
+        // 세이브 데이터 정보 추가
+        if (SaveLoadManager.Instance != null)
+        {
+            var saveData = SaveLoadManager.Instance.GetCurrentSaveData();
+            if (saveData != null)
+            {
+                SteamMatchmaking.SetLobbyData(CurrentLobbyID, "SaveDay", saveData.inGameDays.ToString());
+            }
+        }
+
         // Transport 세팅 확인 및 호스트 시작
         SetupSteamTransportForHost();
 

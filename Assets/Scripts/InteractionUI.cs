@@ -1,5 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 화면 중앙의 조준선(크로스헤어) 및 상호작용 키 안내(HUD)를 관리하는 UI 컴포넌트입니다.
@@ -13,12 +14,12 @@ public class InteractionUI : MonoBehaviour
 
     [Header("Prompt UI")]
     [SerializeField] private GameObject _promptPanel;
-    [SerializeField] private Text _keyText;
-    [SerializeField] private Text _promptText;
+    [SerializeField] private TMP_Text _keyText;
+    [SerializeField] private TMP_Text _promptText;
 
     [Header("Held Item UI")]
     [SerializeField] private GameObject _heldHintPanel;
-    [SerializeField] private Text _heldHintText;
+    [SerializeField] private TMP_Text _heldHintText;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatic()
@@ -209,12 +210,12 @@ public class InteractionUI : MonoBehaviour
 
         var keyTextGO = new GameObject("KeyText");
         keyTextGO.transform.SetParent(keyBoxGO.transform, false);
-        var keyText = keyTextGO.AddComponent<Text>();
-        keyText.font = font;
+        var keyText = keyTextGO.AddComponent<TextMeshProUGUI>();
+        // keyText.font = font; /* TMP Font */
         keyText.text = "E";
         keyText.fontSize = 20;
-        keyText.fontStyle = FontStyle.Bold;
-        keyText.alignment = TextAnchor.MiddleCenter;
+        keyText.fontStyle = FontStyles.Bold;
+        keyText.alignment = TextAlignmentOptions.Center;
         keyText.color = Color.white;
         var keyTextRect = keyTextGO.GetComponent<RectTransform>();
         keyTextRect.anchorMin = Vector2.zero;
@@ -225,12 +226,12 @@ public class InteractionUI : MonoBehaviour
         // Action Text
         var actionTextGO = new GameObject("ActionText");
         actionTextGO.transform.SetParent(promptGO.transform, false);
-        var actionText = actionTextGO.AddComponent<Text>();
-        actionText.font = font;
+        var actionText = actionTextGO.AddComponent<TextMeshProUGUI>();
+        // actionText.font = font; /* TMP Font */
         actionText.text = "상호작용";
         actionText.fontSize = 18;
-        actionText.fontStyle = FontStyle.Normal;
-        actionText.alignment = TextAnchor.MiddleLeft;
+        actionText.fontStyle = FontStyles.Normal;
+        actionText.alignment = TextAlignmentOptions.Left;
         actionText.color = Color.white;
         var actionTextRect = actionTextGO.GetComponent<RectTransform>();
         actionTextRect.anchorMin = new Vector2(0.33f, 0f);
@@ -252,12 +253,12 @@ public class InteractionUI : MonoBehaviour
 
         var heldTextGO = new GameObject("HeldText");
         heldTextGO.transform.SetParent(heldGO.transform, false);
-        var heldText = heldTextGO.AddComponent<Text>();
-        heldText.font = font;
+        var heldText = heldTextGO.AddComponent<TextMeshProUGUI>();
+        // heldText.font = font; /* TMP Font */
         heldText.text = "[좌클릭] 바닥에 내려놓기";
         heldText.fontSize = 16;
-        heldText.fontStyle = FontStyle.Normal;
-        heldText.alignment = TextAnchor.MiddleCenter;
+        heldText.fontStyle = FontStyles.Normal;
+        heldText.alignment = TextAlignmentOptions.Center;
         heldText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
         var heldTextRect = heldTextGO.GetComponent<RectTransform>();
         heldTextRect.anchorMin = Vector2.zero;
@@ -281,3 +282,4 @@ public class InteractionUI : MonoBehaviour
         return ui;
     }
 }
+

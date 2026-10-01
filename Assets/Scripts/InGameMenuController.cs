@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// GameScene에서 플레이 도중 ESC 키 입력을 감지하여 인게임 메뉴(계속하기, 종료하기)를 토글하고,
@@ -19,7 +20,7 @@ public class InGameMenuController : MonoBehaviour
     [SerializeField] private Button _resumeButton;
     [SerializeField] private Button _optionButton;
     [SerializeField] private Button _exitButton;
-    [SerializeField] private Text _statusText;
+    [SerializeField] private TMP_Text _statusText;
     [SerializeField] private OptionWindowUI _optionWindow;
 
     private bool _isMenuOpen = false;

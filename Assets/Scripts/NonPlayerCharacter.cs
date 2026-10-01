@@ -4,18 +4,17 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// 월드 상에서 자율적으로 움직이거나 상호작용하는 몬스터 및 NPC의 베이스 클래스입니다.
+/// ?�드 ?�에???�율?�으�??�직이거나 ?�호?�용?�는 몬스??�?NPC??베이???�래?�입?�다.
 ///
-/// [Authority vs Ownership 설계 원칙]
+/// [Authority vs Ownership ?�계 ?�칙]
 /// 1. Server-Authoritative:
-///    - 모든 상태 결정, 이동, 피격 및 사망 판정은 오직 서버(IsServer)에서만 연산 및 갱신됩니다.
-/// 2. Ownership의 명확한 분리:
-///    - Unity Netcode for GameObjects(NGO)에서 호스트(Host, ClientId = 0) 환경일 때,
-///      서버 스폰된 객체의 내부 OwnerClientId가 ServerClientId로 자동 지정되어
-///      기술적으로 NGO의 IsOwner가 true를 반환할 수 있습니다.
-///    - 하지만 이 캐릭터는 플레이어가 소유하거나 조종하는 캐릭터가 아닙니다.
-///    - 따라서 HasPlayerOwner, IsPlayerControlled는 항상 false를 반환하며,
-///      플레이어 전용 로직(PlayerController, 카메라 부착, 플레이어 입력, HUD 등)에 관여하지 않습니다.
+///    - 모든 ?�태 결정, ?�동, ?�격 �??�망 ?�정?� ?�직 ?�버(IsServer)?�서�??�산 �?갱신?�니??
+/// 2. Ownership??명확??분리:
+///    - Unity Netcode for GameObjects(NGO)?�서 ?�스??Host, ClientId = 0) ?�경????
+///      ?�버 ?�폰??객체???��? OwnerClientId가 ServerClientId�??�동 지?�되??///      기술?�으�?NGO??IsOwner가 true�?반환?????�습?�다.
+///    - ?��?�???캐릭?�는 ?�레?�어가 ?�유?�거??조종?�는 캐릭?��? ?�닙?�다.
+///    - ?�라??HasPlayerOwner, IsPlayerControlled????�� false�?반환?�며,
+///      ?�레?�어 ?�용 로직(PlayerController, 카메??부�? ?�레?�어 ?�력, HUD ????관?�하지 ?�습?�다.
 /// </summary>
 [DisallowMultipleComponent]
 public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
@@ -24,12 +23,12 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     [SerializeField] private string _defaultName = "NonPlayerCharacter";
     [SerializeField] private int _maxHealth = 100;
 
-    [Header("Stagger Settings (피격 경직 및 무한 스턴 방지)")]
-    [Tooltip("피격 시 기본 경직 시간(초)")]
+    [Header("Stagger Settings (?�격 경직 �?무한 ?�턴 방�?)")]
+    [Tooltip("?�격 ??기본 경직 ?�간(�?")]
     [SerializeField] private float _baseStaggerDuration = 0.35f;
-    [Tooltip("단시간 연속 피격 시 경직 시간 감소 배율 (0.25면 매 피격마다 25%씩 감소)")]
+    [Tooltip("?�시�??�속 ?�격 ??경직 ?�간 감소 배율 (0.25�?�??�격마다 25%??감소)")]
     [SerializeField] private float _staggerDiminishFactor = 0.25f;
-    [Tooltip("피격이 없을 때 경직 내성이 초기화되는 대기 시간(초)")]
+    [Tooltip("?�격???�을 ??경직 ?�성??초기?�되???��??�간(�?")]
     [SerializeField] private float _staggerResetDelay = 2.0f;
 
     private float _currentStaggerTimer;
@@ -43,26 +42,26 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     [SerializeField] private bool _autoDespawnOnDeath = true;
     [SerializeField] private float _despawnDelay = 3f;
 
-    // --- 소유권 및 권한 식별 프로퍼티 ---
+    // --- ?�유�?�?권한 ?�별 ?�로?�티 ---
 
     /// <summary>
-    /// 실제 인간 플레이어가 이 캐릭터를 소유하고 있는지 여부입니다.
-    /// 몬스터 및 NPC는 서버 엔티티이므로 항상 false를 반환합니다.
+    /// ?�제 ?�간 ?�레?�어가 ??캐릭?��? ?�유?�고 ?�는지 ?��??�니??
+    /// 몬스??�?NPC???�버 ?�티?�이므�???�� false�?반환?�니??
     /// </summary>
     public virtual bool HasPlayerOwner => false;
 
     /// <summary>
-    /// 로컬 머신의 플레이어 입력에 의해 조종되는지 여부입니다.
-    /// 몬스터 및 NPC는 AI 또는 서버 스크립트에 의해 제어되므로 항상 false입니다.
+    /// 로컬 머신???�레?�어 ?�력???�해 조종?�는지 ?��??�니??
+    /// 몬스??�?NPC??AI ?�는 ?�버 ?�크립트???�해 ?�어?��?�???�� false?�니??
     /// </summary>
     public virtual bool IsPlayerControlled => false;
 
     /// <summary>
-    /// 서버가 모든 로직과 상태를 전적으로 제어(Server-Authoritative)하는지 여부입니다.
+    /// ?�버가 모든 로직�??�태�??�적?�로 ?�어(Server-Authoritative)?�는지 ?��??�니??
     /// </summary>
     public bool IsServerAuthoritative => true;
 
-    // --- 서버 권한 네트워크 동기화 변수 ---
+    // --- ?�버 권한 ?�트?�크 ?�기??변??---
 
     private readonly NetworkVariable<CharacterState> _currentState = new NetworkVariable<CharacterState>(
         CharacterState.Idle,
@@ -82,7 +81,7 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
         NetworkVariableWritePermission.Server
     );
 
-    // --- 상태 및 이벤트 ---
+    // --- ?�태 �??�벤??---
 
     public CharacterState CurrentState => _currentState.Value;
     public int CurrentHealth => _currentHealth.Value;
@@ -133,101 +132,76 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     }
 
     /// <summary>
-    /// 클라이언트 측에서 상태 변경 시 비주얼(애니메이션, 이펙트 등)을 반영하기 위한 가상 메서드입니다.
+    /// ?�라?�언??측에???�태 변�???비주???�니메이?? ?�펙??????반영?�기 ?�한 가??메서?�입?�다.
     /// </summary>
     protected virtual void OnClientStateChanged(CharacterState previousState, CharacterState newState)
     {
-        // 파생 클래스에서 애니메이션 및 비주얼 처리
+        // ?�생 ?�래?�에???�니메이??�?비주??처리
     }
 
     /// <summary>
-    /// 서버에서만 실행되는 상태 변경 메서드입니다.
+    /// ?�버?�서�??�행?�는 ?�태 변�?메서?�입?�다.
     /// </summary>
-    /// <param name="newState">변경할 새로운 상태</param>
+    /// <param name="newState">변경할 ?�로???�태</param>
     protected void SetState(CharacterState newState)
     {
         if (!IsServer)
         {
-            Debug.LogWarning($"[NonPlayerCharacter] 상태 변경은 오직 서버에서만 가능합니다! (오브젝트: {name})");
+            Debug.LogWarning($"[NonPlayerCharacter] ?�태 변경�? ?�직 ?�버?�서�?가?�합?�다! (?�브?�트: {name})");
             return;
         }
 
         if (_currentState.Value == CharacterState.Dead)
         {
-            return; // 이미 사망한 경우 상태 변경 무시
+            return; // ?��? ?�망??경우 ?�태 변�?무시
         }
 
         _currentState.Value = newState;
     }
 
     /// <summary>
-    /// IDamageable 인터페이스 구현. 피격 정보(헤드샷, 차지 여부 등)를 포함하여 데미지를 적용합니다.
+    /// IDamageable ?�터?�이??구현. ?�격 ?�보(?�드?? 차�? ?��? ??�??�함?�여 ?��?지�??�용?�니??
     /// </summary>
     public virtual void TakeDamage(DamageInfo damageInfo)
     {
-        if (!IsServer || IsDead || damageInfo.Amount <= 0)
+        if (!IsServer || IsDead || damageInfo.Amount <= 0) return;
+
+        int previousHealth = _currentHealth.Value;
+        int newHealth = Mathf.Max(0, previousHealth - damageInfo.Amount);
+        _currentHealth.Value = newHealth;
+
+        NotifyDamagedClientRpc(damageInfo.Amount, damageInfo.InstigatorClientId);
+
+        if (newHealth <= 0)
         {
-            return;
+            HandleDeath(damageInfo);
+            return; // �׾����� �����̳� �˹� ���� (Ragdoll�� ó����)
         }
 
-        TakeDamage(damageInfo.Amount, damageInfo.InstigatorClientId);
-
-        // 피격 경직(Stagger) 적용
         ApplyStagger();
-
-        // 피격 넉백(Knockback) 적용
         if (damageInfo.KnockbackForce > 0f && damageInfo.KnockbackDirection != Vector3.zero)
         {
             ApplyKnockback(damageInfo.KnockbackDirection, damageInfo.KnockbackForce);
         }
     }
 
-    /// <summary>
-    /// 피격 시 넉백 물리력을 적용합니다. 서버 권한(Server-Authoritative)으로 동작합니다.
-    /// </summary>
     protected virtual void ApplyKnockback(Vector3 direction, float force)
     {
-        // 베이스 클래스에서는 기본 빈 구현 (구체적인 이동 컴포넌트에 맞춰 서브클래스에서 구현)
     }
 
-    /// <summary>
-    /// 데미지를 입히는 메서드입니다. 서버 권한(Server-Authoritative)으로 동작합니다.
-    /// </summary>
-    /// <param name="damage">입힐 데미지 양</param>
-    /// <param name="instigatorClientId">데미지를 가한 주체의 ClientId</param>
     public virtual void TakeDamage(int damage, ulong instigatorClientId)
     {
-        if (!IsServer)
-        {
-            Debug.LogWarning($"[NonPlayerCharacter] TakeDamage는 서버에서만 호출되어야 합니다! (호출자: ClientId={instigatorClientId})");
-            return;
-        }
-
-        if (IsDead || damage <= 0)
-        {
-            return;
-        }
-
-        int previousHealth = _currentHealth.Value;
-        int newHealth = Mathf.Max(0, previousHealth - damage);
-        _currentHealth.Value = newHealth;
-
-        NotifyDamagedClientRpc(damage, instigatorClientId);
-
-        if (newHealth <= 0)
-        {
-            HandleDeath();
-        }
+        TakeDamage(new DamageInfo(damage, instigatorClientId, transform.position, Vector3.up));
     }
 
     /// <summary>
-    /// 점감 법칙(Diminishing Returns)을 적용하여 경직 시간을 계산하고 부여합니다.
+    /// ?�감 법칙(Diminishing Returns)???�용?�여 경직 ?�간??계산?�고 부?�합?�다.
     /// </summary>
     protected virtual void ApplyStagger()
     {
         if (!IsServer || IsDead) return;
 
-        // 점감 배율 계산: 1회차 100%, 2회차 75%, 3회차 50% ... 최소 10%
+        // ?�감 배율 계산: 1?�차 100%, 2?�차 75%, 3?�차 50% ... 최소 10%
         float multiplier = Mathf.Max(0.1f, 1.0f - (_consecutiveStaggerCount * _staggerDiminishFactor));
         float calculatedDuration = _baseStaggerDuration * multiplier;
 
@@ -239,7 +213,7 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     }
 
     /// <summary>
-    /// 서버 프레임마다 경직 타이머와 점감 초기화 타이머를 갱신합니다.
+    /// ?�버 ?�레?�마??경직 ?�?�머?� ?�감 초기???�?�머�?갱신?�니??
     /// </summary>
     protected virtual void UpdateStagger(float deltaTime)
     {
@@ -259,7 +233,7 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
             _staggerResetTimer -= deltaTime;
             if (_staggerResetTimer <= 0f)
             {
-                // 일정 시간 동안 추가 피격이 없었으므로 점감 카운트 리셋
+                // ?�정 ?�간 ?�안 추�? ?�격???�었?��?�??�감 카운??리셋
                 _consecutiveStaggerCount = 0;
             }
         }
@@ -268,7 +242,7 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     [ClientRpc]
     private void NotifyStaggeredClientRpc(float duration)
     {
-        // 클라이언트 측 피격 경직 애니메이션/사운드 트리거용
+        // ?�라?�언??�??�격 경직 ?�니메이???�운???�리거용
     }
 
     [ClientRpc]
@@ -278,9 +252,9 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     }
 
     /// <summary>
-    /// 사망 처리 로직입니다. 서버에서 호출됩니다.
+    /// ?�망 처리 로직?�니?? ?�버?�서 ?�출?�니??
     /// </summary>
-    protected virtual void HandleDeath()
+    protected virtual void HandleDeath(DamageInfo lastDamage)
     {
         if (!IsServer)
         {
@@ -288,7 +262,7 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
         }
 
         SetState(CharacterState.Dead);
-        NotifyDiedClientRpc();
+        NotifyDiedClientRpc(lastDamage.KnockbackDirection, lastDamage.KnockbackForce, lastDamage.HitPoint);
 
         if (CharacterCollider != null)
         {
@@ -302,14 +276,19 @@ public abstract class NonPlayerCharacter : NetworkBehaviour, IDamageable
     }
 
     [ClientRpc]
-    private void NotifyDiedClientRpc()
+    private void NotifyDiedClientRpc(Vector3 knockbackDir, float knockbackForce, Vector3 hitPoint)
     {
         OnDied?.Invoke();
+        OnClientDied(knockbackDir, knockbackForce, hitPoint);
 
         if (CharacterCollider != null)
         {
             CharacterCollider.enabled = false;
         }
+    }
+
+    protected virtual void OnClientDied(Vector3 knockbackDir, float knockbackForce, Vector3 hitPoint)
+    {
     }
 
     private void DespawnSelf()

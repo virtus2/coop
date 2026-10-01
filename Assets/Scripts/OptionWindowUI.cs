@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 환경 설정(마우스 감도 등)을 조절할 수 있는 재사용 가능한 모듈형 옵션 창 UI 컨트롤러입니다.
@@ -14,15 +15,15 @@ public class OptionWindowUI : MonoBehaviour
 
     [Header("Mouse Sensitivity UI")]
     [SerializeField] private Slider _mouseSensitivitySlider;
-    [SerializeField] private Text _mouseSensitivityValueText;
+    [SerializeField] private TextMeshProUGUI _mouseSensitivityValueText;
 
     [Header("Audio Volume UI")]
     [SerializeField] private Slider _masterVolumeSlider;
-    [SerializeField] private Text _masterVolumeValueText;
+    [SerializeField] private TextMeshProUGUI _masterVolumeValueText;
     [SerializeField] private Slider _bgmVolumeSlider;
-    [SerializeField] private Text _bgmVolumeValueText;
+    [SerializeField] private TextMeshProUGUI _bgmVolumeValueText;
     [SerializeField] private Slider _sfxVolumeSlider;
-    [SerializeField] private Text _sfxVolumeValueText;
+    [SerializeField] private TextMeshProUGUI _sfxVolumeValueText;
 
     [Header("Buttons")]
     [SerializeField] private Button _closeButton;
@@ -307,7 +308,7 @@ public class OptionWindowUI : MonoBehaviour
         }
     }
 
-    private void UpdateVolumeValueText(Text label, float value)
+    private void UpdateVolumeValueText(TextMeshProUGUI label, float value)
     {
         if (label != null)
         {
