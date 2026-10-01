@@ -1,0 +1,929 @@
+{
+ "atlas": 1024,
+ "atlas_used": 96,
+ "fps": 30,
+ "props": [
+  {
+   "name": "range_six",
+   "title": "Six-Burner Range",
+   "group": "restaurant kitchen",
+   "place": "floor",
+   "note": "its oven opens, its burners light",
+   "tris": 586,
+   "size": [
+    0.92,
+    0.83,
+    1.41
+   ],
+   "min": [
+    -0.46,
+    -0.43,
+    0.0
+   ],
+   "max": [
+    0.46,
+    0.4,
+    1.41
+   ],
+   "parts": [
+    {
+     "name": "range_six",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 442,
+     "min": [
+      -0.46,
+      -0.42,
+      0.0
+     ],
+     "max": [
+      0.46,
+      0.4,
+      1.41
+     ]
+    },
+    {
+     "name": "range_six_door",
+     "parent": "range_six",
+     "pivot": [
+      0.0,
+      -0.415,
+      0.2
+     ],
+     "tris": 12,
+     "min": [
+      -0.43,
+      -0.43,
+      0.2
+     ],
+     "max": [
+      0.43,
+      -0.4,
+      0.65
+     ]
+    },
+    {
+     "name": "range_six_flames",
+     "parent": "range_six",
+     "pivot": [
+      0.0,
+      0.0,
+      0.9
+     ],
+     "tris": 132,
+     "min": [
+      -0.36,
+      -0.28,
+      0.87
+     ],
+     "max": [
+      0.36,
+      0.22,
+      0.905
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "open",
+     "seconds": 1.2,
+     "loop": false
+    },
+    {
+     "name": "light",
+     "seconds": 1.0,
+     "loop": false
+    }
+   ]
+  },
+  {
+   "name": "prep_table",
+   "title": "Prep Table",
+   "group": "restaurant kitchen",
+   "place": "floor",
+   "note": "",
+   "tris": 180,
+   "size": [
+    1.2,
+    0.75,
+    1.0
+   ],
+   "min": [
+    -0.6,
+    -0.375,
+    0.0
+   ],
+   "max": [
+    0.6,
+    0.375,
+    1.0
+   ],
+   "parts": [
+    {
+     "name": "prep_table",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 180,
+     "min": [
+      -0.6,
+      -0.375,
+      0.0
+     ],
+     "max": [
+      0.6,
+      0.375,
+      1.0
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "microwave",
+   "title": "Commercial Microwave",
+   "group": "restaurant kitchen",
+   "place": "item",
+   "note": "it runs, the plate turning behind the glass",
+   "tris": 214,
+   "size": [
+    0.52,
+    0.48,
+    0.32
+   ],
+   "min": [
+    -0.26,
+    -0.27,
+    0.0
+   ],
+   "max": [
+    0.26,
+    0.21,
+    0.32
+   ],
+   "parts": [
+    {
+     "name": "microwave",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 82,
+     "min": [
+      -0.26,
+      -0.21,
+      0.0
+     ],
+     "max": [
+      0.26,
+      0.21,
+      0.32
+     ]
+    },
+    {
+     "name": "microwave_plate",
+     "parent": "microwave",
+     "pivot": [
+      -0.07,
+      0.0,
+      0.03
+     ],
+     "tris": 72,
+     "min": [
+      -0.2,
+      -0.13,
+      0.03
+     ],
+     "max": [
+      0.06,
+      0.13,
+      0.068
+     ]
+    },
+    {
+     "name": "microwave_door",
+     "parent": "microwave",
+     "pivot": [
+      -0.255,
+      -0.21,
+      0.0
+     ],
+     "tris": 60,
+     "min": [
+      -0.255,
+      -0.27,
+      0.01
+     ],
+     "max": [
+      0.115,
+      -0.21,
+      0.31
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "run",
+     "seconds": 4.0,
+     "loop": true
+    },
+    {
+     "name": "open",
+     "seconds": 1.0,
+     "loop": false
+    }
+   ]
+  },
+  {
+   "name": "stool_red",
+   "title": "Counter Stool, Red",
+   "group": "diner",
+   "place": "floor",
+   "note": "its seat spins",
+   "tris": 270,
+   "size": [
+    0.4,
+    0.4,
+    0.78
+   ],
+   "min": [
+    -0.2,
+    -0.2,
+    0.0
+   ],
+   "max": [
+    0.2,
+    0.2,
+    0.78
+   ],
+   "parts": [
+    {
+     "name": "stool_red",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 192,
+     "min": [
+      -0.18,
+      -0.1712,
+      0.0
+     ],
+     "max": [
+      0.18,
+      0.1712,
+      0.66
+     ]
+    },
+    {
+     "name": "stool_red_seat",
+     "parent": "stool_red",
+     "pivot": [
+      0.0,
+      0.0,
+      0.68
+     ],
+     "tris": 78,
+     "min": [
+      -0.2,
+      -0.2,
+      0.68
+     ],
+     "max": [
+      0.2,
+      0.2,
+      0.78
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "spin",
+     "seconds": 1.5,
+     "loop": false
+    }
+   ]
+  },
+  {
+   "name": "cash_register",
+   "title": "Cash Register",
+   "group": "diner",
+   "place": "item",
+   "note": "its drawer springs open",
+   "tris": 94,
+   "size": [
+    0.47,
+    0.42,
+    0.36
+   ],
+   "min": [
+    -0.18,
+    -0.2,
+    0.0
+   ],
+   "max": [
+    0.29,
+    0.22,
+    0.36
+   ],
+   "parts": [
+    {
+     "name": "cash_register",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 82,
+     "min": [
+      -0.18,
+      -0.2,
+      0.0
+     ],
+     "max": [
+      0.29,
+      0.22,
+      0.36
+     ]
+    },
+    {
+     "name": "cash_register_drawer",
+     "parent": "cash_register",
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 12,
+     "min": [
+      -0.17,
+      -0.18,
+      0.0075
+     ],
+     "max": [
+      0.17,
+      0.18,
+      0.0725
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "open",
+     "seconds": 0.6,
+     "loop": false
+    }
+   ]
+  },
+  {
+   "name": "stockpot",
+   "title": "Stockpot",
+   "group": "cookware",
+   "place": "item",
+   "note": "its lid lifts",
+   "tris": 240,
+   "size": [
+    0.473,
+    0.41,
+    0.411
+   ],
+   "min": [
+    -0.237,
+    -0.205,
+    0.0
+   ],
+   "max": [
+    0.237,
+    0.205,
+    0.411
+   ],
+   "parts": [
+    {
+     "name": "stockpot",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 152,
+     "min": [
+      -0.2367,
+      -0.2,
+      0.0
+     ],
+     "max": [
+      0.2367,
+      0.2,
+      0.36
+     ]
+    },
+    {
+     "name": "stockpot_lid",
+     "parent": "stockpot",
+     "pivot": [
+      0.0,
+      0.0,
+      0.36
+     ],
+     "tris": 88,
+     "min": [
+      -0.205,
+      -0.205,
+      0.36
+     ],
+     "max": [
+      0.205,
+      0.205,
+      0.4115
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "open",
+     "seconds": 1.0,
+     "loop": false
+    }
+   ]
+  },
+  {
+   "name": "frying_pan_steel",
+   "title": "Frying Pan, Steel",
+   "group": "cookware",
+   "place": "item",
+   "note": "",
+   "tris": 108,
+   "size": [
+    0.457,
+    0.26,
+    0.082
+   ],
+   "min": [
+    -0.13,
+    -0.13,
+    0.0
+   ],
+   "max": [
+    0.327,
+    0.13,
+    0.082
+   ],
+   "parts": [
+    {
+     "name": "frying_pan_steel",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 108,
+     "min": [
+      -0.13,
+      -0.13,
+      0.0
+     ],
+     "max": [
+      0.3266,
+      0.13,
+      0.0825
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "chef_knife",
+   "title": "Chef's Knife",
+   "group": "cookware",
+   "place": "item",
+   "note": "",
+   "tris": 52,
+   "size": [
+    0.045,
+    0.34,
+    0.022
+   ],
+   "min": [
+    -0.022,
+    -0.22,
+    -0.001
+   ],
+   "max": [
+    0.022,
+    0.12,
+    0.021
+   ],
+   "parts": [
+    {
+     "name": "chef_knife",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 52,
+     "min": [
+      -0.0225,
+      -0.22,
+      -0.001
+     ],
+     "max": [
+      0.0225,
+      0.12,
+      0.021
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "burger",
+   "title": "Burger",
+   "group": "fast food",
+   "place": "item",
+   "note": "",
+   "tris": 214,
+   "size": [
+    0.116,
+    0.11,
+    0.088
+   ],
+   "min": [
+    -0.058,
+    -0.055,
+    0.0
+   ],
+   "max": [
+    0.058,
+    0.055,
+    0.088
+   ],
+   "parts": [
+    {
+     "name": "burger",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 214,
+     "min": [
+      -0.058,
+      -0.0552,
+      0.0
+     ],
+     "max": [
+      0.058,
+      0.0552,
+      0.088
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "fries",
+   "title": "Fries",
+   "group": "fast food",
+   "place": "item",
+   "note": "",
+   "tris": 144,
+   "size": [
+    0.092,
+    0.057,
+    0.105
+   ],
+   "min": [
+    -0.046,
+    -0.029,
+    0.0
+   ],
+   "max": [
+    0.046,
+    0.028,
+    0.105
+   ],
+   "parts": [
+    {
+     "name": "fries",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 144,
+     "min": [
+      -0.046,
+      -0.0285,
+      0.0
+     ],
+     "max": [
+      0.046,
+      0.028,
+      0.1051
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "soda_cup",
+   "title": "Soda Cup",
+   "group": "fast food",
+   "place": "item",
+   "note": "",
+   "tris": 92,
+   "size": [
+    0.096,
+    0.091,
+    0.26
+   ],
+   "min": [
+    -0.048,
+    -0.046,
+    0.0
+   ],
+   "max": [
+    0.048,
+    0.046,
+    0.26
+   ],
+   "parts": [
+    {
+     "name": "soda_cup",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 92,
+     "min": [
+      -0.048,
+      -0.0457,
+      0.0
+     ],
+     "max": [
+      0.048,
+      0.0457,
+      0.2596
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "steak",
+   "title": "Steak",
+   "group": "fresh food",
+   "place": "item",
+   "note": "raw, on butcher's paper",
+   "tris": 28,
+   "size": [
+    0.3,
+    0.3,
+    0.027
+   ],
+   "min": [
+    -0.15,
+    -0.15,
+    0.0
+   ],
+   "max": [
+    0.15,
+    0.15,
+    0.027
+   ],
+   "parts": [
+    {
+     "name": "steak",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 28,
+     "min": [
+      -0.15,
+      -0.15,
+      0.0
+     ],
+     "max": [
+      0.15,
+      0.15,
+      0.027
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "steak_rotten",
+   "title": "Steak, Rotten",
+   "group": "rotten food",
+   "place": "item",
+   "note": "flies circling it",
+   "tris": 212,
+   "size": [
+    0.3,
+    0.3,
+    0.204
+   ],
+   "min": [
+    -0.15,
+    -0.15,
+    0.0
+   ],
+   "max": [
+    0.15,
+    0.15,
+    0.204
+   ],
+   "parts": [
+    {
+     "name": "steak_rotten",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 140,
+     "min": [
+      -0.15,
+      -0.15,
+      0.0
+     ],
+     "max": [
+      0.15,
+      0.15,
+      0.0455
+     ]
+    },
+    {
+     "name": "steak_rotten_flies",
+     "parent": "steak_rotten",
+     "pivot": [
+      0.0,
+      0.0,
+      0.1395
+     ],
+     "tris": 72,
+     "min": [
+      -0.0834,
+      -0.0943,
+      0.1355
+     ],
+     "max": [
+      0.1017,
+      0.1099,
+      0.2035
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "buzz",
+     "seconds": 2.0,
+     "loop": true
+    }
+   ]
+  },
+  {
+   "name": "can_tomatoes",
+   "title": "Catering Can, Tomatoes",
+   "group": "pantry",
+   "place": "item",
+   "note": "",
+   "tris": 76,
+   "size": [
+    0.16,
+    0.152,
+    0.178
+   ],
+   "min": [
+    -0.08,
+    -0.076,
+    0.0
+   ],
+   "max": [
+    0.08,
+    0.076,
+    0.178
+   ],
+   "parts": [
+    {
+     "name": "can_tomatoes",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 76,
+     "min": [
+      -0.08,
+      -0.0761,
+      0.0
+     ],
+     "max": [
+      0.08,
+      0.0761,
+      0.178
+     ]
+    }
+   ],
+   "anims": []
+  },
+  {
+   "name": "jar_jam",
+   "title": "Jar of Jam",
+   "group": "pantry",
+   "place": "item",
+   "note": "its lid unscrews",
+   "tris": 162,
+   "size": [
+    0.083,
+    0.079,
+    0.132
+   ],
+   "min": [
+    -0.042,
+    -0.039,
+    0.0
+   ],
+   "max": [
+    0.042,
+    0.039,
+    0.132
+   ],
+   "parts": [
+    {
+     "name": "jar_jam",
+     "parent": null,
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 126,
+     "min": [
+      -0.0415,
+      -0.0395,
+      0.0
+     ],
+     "max": [
+      0.0415,
+      0.0395,
+      0.12
+     ]
+    },
+    {
+     "name": "jar_jam_lid",
+     "parent": "jar_jam",
+     "pivot": [
+      0.0,
+      0.0,
+      0.12
+     ],
+     "tris": 36,
+     "min": [
+      -0.0336,
+      -0.032,
+      0.112
+     ],
+     "max": [
+      0.0336,
+      0.032,
+      0.132
+     ]
+    }
+   ],
+   "anims": [
+    {
+     "name": "open",
+     "seconds": 1.2,
+     "loop": false
+    }
+   ]
+  }
+ ]
+}

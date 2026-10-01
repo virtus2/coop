@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://addons/psx_kitchen_and_food/models/frying_pan_steel_model.glb" id="1"]
+
+[sub_resource type="BoxShape3D" id="box0"]
+size = Vector3(0.4566, 0.0825, 0.2600)
+
+[node name="frying_pan_steel" instance=ExtResource("1")]
+
+[node name="Collision" type="StaticBody3D" parent="frying_pan_steel"]
+
+[node name="Box" type="CollisionShape3D" parent="frying_pan_steel/Collision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0983, 0.0413, -0.0000)
+shape = SubResource("box0")
